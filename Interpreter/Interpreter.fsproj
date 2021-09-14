@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Utils.fs" />
+    <Compile Include="AST.Types.fs" />
+    <Compile Include="AST.Runner.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharpPlus" Version="1.2.1" />
+  </ItemGroup>
+
+</Project>
