@@ -27,7 +27,9 @@ module Environment =
           Kind =
               { Functions = new Dictionary<Identifier, Function>() }
               |> EnvironmentKind.Global }
-
+    let createNested parent variables = 
+        { Variables = new Dictionary<Identifier, Value>(variables |> Map.toSeq |> dict)
+          Kind = {Parent = parent} |> EnvironmentKind.Scoped }
 module Errors =
     type ErrorType =
         | Evaluation
@@ -97,71 +99,9 @@ open Environment
 type Runner() =
     let defaultEnvironment = Environment.createEmptyGlobal ()
     let mutable currentEnvironment = defaultEnvironment
-
-    //let expressionEvaluator exp =
-    //    let tryUpdateVar environment identifier newValue =
-    //        if environment.Variables.ContainsKey identifier then
-    //            environment.Variables.[identifier] = newValue
-    //            |> ignore
-
-    //            Result.Ok()
-    //        else
-    //            environment.Variables.[identifier] = newValue
-    //            |> ignore
-
-    //            Errors.createResult "variable not defined" Errors.ErrorType.Other
-
-    //    let tryGetVar environment identifier =
-    //        let vars () = environment.Variables
-
-    //        (vars().ContainsKey identifier, vars().[identifier])
-    //        |> Option.ofPair
-    //        |> Option.toResultWith (Errors.create "variable not defined" Errors.ErrorType.Other)
-
-    //    let constEvaluator value = Result.Ok value
-
-    //    let binaryOpEvaluator op val1 val2 =
-
-    //        let evalArithmeticExp val1 val2 =
-    //            function
-    //            | (Add _) -> (val1 + val2)
-    //            | (Sub _) -> (val1 - val2)
-    //            | (Mul _) -> (val1 * val2)
-    //            | (Div _) -> (val1 / val2)
-
-    //        let evalArithmeticExp op =
-    //            try
-    //                (evalArithmeticExp val1 val2 op) |> Result.Ok
-    //            with
-    //            | _ -> (Errors.createResult "Arithmetic error" Errors.ErrorType.Other)
-
-    //        match op with
-    //        | BinaryOp.ArithmeticOp op -> (evalArithmeticExp op)
-
-    //    let unaryOpEvaluator op value =
-    //        match op with
-    //        | Negate -> failwith "Not implemented"
-
-    //    let funEvaluator environment identifier actualParameters =
-    //        let funcs () = environment.Functions
-
-    //        monad' {
-    //            let! f = (funcs().ContainsKey identifier, funcs().[identifier])
-    //                    |> Option.ofPair
-    //                    |> Option.toResultWith (Errors.create "function not defined" Errors.ErrorType.Other)
-                
-    //        }            
-      
-    //    Evaluator.tryEvaluate
-    //        (tryUpdateVar currentEnvironment)
-    //        (tryGetVar currentEnvironment)
-    //        constEvaluator
-    //        binaryOpEvaluator
-    //        unaryOpEvaluator
-    //        exp
-
-    let rec runScopedStmt exp =
-        
+ 
+  
+    let rec runScopedStmt exp =        
         let expressionEvaluator exp =
             let tryUpdateVar environment identifier newValue =
                 if environment.Variables.ContainsKey identifier then
@@ -206,15 +146,20 @@ type Runner() =
                 match op with
                 | Negate -> failwith "Not implemented"
 
-            let funEvaluator environment identifier actualParameters =
-                let funcs () = environment.Functions
-
+            let funEvaluator (environment:Environment) identifier (actualParameters:Value list) =
+                let funcs  = match environment.Kind with 
+                                | EnvironmentKind.Global g -> g.Functions
+                                |_ -> invalidArg "environment" "functions cannot be defined in local scope"
                 monad' {
-                    let! f = (funcs().ContainsKey identifier, funcs().[identifier])
-                            |> Option.ofPair
-                            |> Option.toResultWith (Errors.create "function not defined" Errors.ErrorType.Other)
-                       
-                }            
+                            let! f = (funcs.ContainsKey identifier, funcs.[identifier])
+                                    |> Option.ofPair
+                                    |> Option.toResultWith (Errors.create "function not defined" Errors.ErrorType.Other)
+                            let! t =  actualParameters |> Result.protect (List.zip f.Parameters) 
+                                                    |> Result.mapError (fun e -> Errors.create "wrong parameters count" Errors.ErrorType.Evaluation)
+                            let! newEnvironment = t |> Map.ofSeq |> Environment.createNested environment
+                            currentEnvironment <- newEnvironment
+                           // return runScopedStmt f.Body
+                    }            
              
             Evaluator.tryEvaluate
                 (tryUpdateVar currentEnvironment)
@@ -222,7 +167,7 @@ type Runner() =
                 constEvaluator
                 binaryOpEvaluator
                 unaryOpEvaluator
-                funEvaluator
+                (funEvaluator currentEnvironment)
                 exp
                 
         match exp with 
