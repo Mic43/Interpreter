@@ -3,9 +3,7 @@
 open Interpretr.AST.Types
 open FSharpPlus
 open System.Collections.Generic
-open System
-open Identifier
-open Value
+
 
 module Environment =
 
@@ -31,8 +29,6 @@ module Environment =
     let createNested parent variables =
         { Variables = new Dictionary<Identifier, Value>(variables |> Map.toSeq |> dict)
           Kind = { Parent = parent } |> EnvironmentKind.Scoped }
-
-
 
 module Evaluator =
 
@@ -87,12 +83,24 @@ module Evaluator =
             }
 
 open Environment
+open Interpretr.AST.Types.Errors
 
 type Runner() =
     let defaultEnvironment = Environment.createEmptyGlobal ()
     let mutable currentEnvironment = defaultEnvironment
 
+    let ignoreResuls (res: Result<Value list, RunError>) =
+        res |> Result.map (fun _ -> () |> Value.VoidValue)
 
+    let tryPrint =
+        function
+        | IntValue iv ->
+            printf "%i" iv
+            () |> VoidValue |> Result.Ok
+        | FloatValue fv -> 
+            printf "%f" fv
+            () |>  VoidValue |> Result.Ok
+        | VoidValue _ -> "Cannot print void value" |> (Errors.createResult Errors.Other)
     let rec runScopedStmt (exp: ScopedStatement) : Result<Value, Errors.RunError> =
         let expressionEvaluator exp =
             let tryUpdateVar environment identifier newValue =
@@ -105,7 +113,7 @@ type Runner() =
                     environment.Variables.[identifier] = newValue
                     |> ignore
 
-                    Errors.createResult "variable not defined" Errors.ErrorType.Other
+                    "variable not defined" |> (Errors.createResult Errors.ErrorType.Other)
 
             let tryGetVar environment identifier =
                 let vars () = environment.Variables
@@ -129,7 +137,7 @@ type Runner() =
                     try
                         (evalArithmeticExp val1 val2 op)
                     with
-                    | _ -> (Errors.createResult "Arithmetic error" Errors.ErrorType.Other)
+                    | _ -> "Arithmetic error" |> (Errors.createResult Errors.ErrorType.Other)
 
                 match op with
                 | BinaryOp.ArithmeticOp op -> (evalArithmeticExp op)
@@ -144,29 +152,25 @@ type Runner() =
                     | EnvironmentKind.Global g -> g.Functions
                     | _ -> invalidArg "environment" "functions cannot be defined in local scope"
 
-                let tmp =
-                    monad' {
-                        let! foundFunc =
-                            (funcs.ContainsKey identifier, funcs.[identifier])
-                            |> Option.ofPair
-                            |> Option.toResultWith (Errors.create Errors.ErrorType.Other "function not defined")
+                monad' {
+                    let! foundFunc =
+                        (funcs.ContainsKey identifier, funcs.[identifier])
+                        |> Option.ofPair
+                        |> Option.toResultWith (Errors.create Errors.ErrorType.Other "function not defined")
 
-                        let! paramsWithValues =
-                            actualParametersValues
-                            |> Result.protect (List.zip foundFunc.Parameters)
-                            |> Result.mapError
-                                (fun e -> Errors.create Errors.ErrorType.Evaluation "wrong parameters count")
+                    let! paramsWithValues =
+                        actualParametersValues
+                        |> Result.protect (List.zip foundFunc.Parameters)
+                        |> Result.mapError (fun e -> Errors.create Errors.ErrorType.Evaluation "wrong parameters count")
 
-                        let newEnvironment =
-                            paramsWithValues
-                            |> Map.ofSeq
-                            |> Environment.createNested environment
+                    let newEnvironment =
+                        paramsWithValues
+                        |> Map.ofSeq
+                        |> Environment.createNested environment
 
-                        currentEnvironment <- newEnvironment
-                        return runScopedStmt (foundFunc.Body |> ScopedStatement.Block)
-                    }
-
-                tmp
+                    currentEnvironment <- newEnvironment
+                    return! runScopedStmt (foundFunc.Body |> ScopedStatement.Block)
+                }
 
             Evaluator.tryEvaluate
                 (tryUpdateVar currentEnvironment)
@@ -179,24 +183,30 @@ type Runner() =
 
         match exp with
         | ExpressionStatement exp -> expressionEvaluator exp
+        | Block block -> block |> traverse runScopedStmt |> ignoreResuls
+        | PrintStatement exp -> 
+            monad' {
+                let! v = (expressionEvaluator exp) 
+                return! (v |> tryPrint)
+            }       
+    let runFunDeclaration fdecl enviroment =
+        let message =
+            fdecl.Name
+            |> Identifier.toStr
+            |> sprintf "Function %s already defined"
+
+        (enviroment.Functions.TryAdd(fdecl.Name, fdecl), ())
+        |> Option.ofPair
+        |> (message
+            |> (Errors.create Errors.ErrorType.Other
+                >> Option.toResultWith))
+        |> Result.map Value.VoidValue
 
     let runStmt statement =
         match (statement, currentEnvironment.Kind) with
-        | (FunDeclaration fd, Global ge) ->
-            let message =
-                fd.Name
-                |> Identifier.toStr
-                |> sprintf "Function %s already defined"
-
-            (ge.Functions.TryAdd(fd.Name, fd), ())
-            |> Option.ofPair
-            |> (message
-                |> (Errors.create Errors.ErrorType.Other
-                    >> Option.toResultWith))
-            |> Result.map Value.VoidValue
+        | (FunDeclaration fd, Global ge) -> runFunDeclaration fd ge
         | (ScopedStatement s, _) -> runScopedStmt s
-        | _ -> failwith "internal error"
 
     member this.Run =
         function
-        | Program program -> program |> (traverse runStmt) //TODO: break when first option is some
+        | Program program -> program |> (traverse runStmt) |> ignoreResuls //TODO: break when first error
