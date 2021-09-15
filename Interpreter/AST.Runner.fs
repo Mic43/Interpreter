@@ -27,22 +27,14 @@ module Environment =
           Kind =
               { Functions = new Dictionary<Identifier, Function>() }
               |> EnvironmentKind.Global }
-    let createNested parent variables = 
+
+    let createNested parent variables =
         { Variables = new Dictionary<Identifier, Value>(variables |> Map.toSeq |> dict)
-          Kind = {Parent = parent} |> EnvironmentKind.Scoped }
-module Errors =
-    type ErrorType =
-        | Evaluation
-        | Other
+          Kind = { Parent = parent } |> EnvironmentKind.Scoped }
 
-    type RunError = { Message: string; Type: ErrorType }
 
-    let create str errorType = { Message = str; Type = errorType }
-    let createResult str errorType = Result.Error(create str errorType)
 
 module Evaluator =
-    //  type EvalError = { Message: string }
-    open Errors
 
     let rec tryEvaluate
         varUpdater
@@ -52,7 +44,7 @@ module Evaluator =
         unaryOpEvaluator
         funEvaluator
         (expression: Expression)
-        : Result<Value, RunError> =
+        : Result<Value, Errors.RunError> =
 
         let tryEvaluateRec =
             tryEvaluate varUpdater varEvaluator constEvaluator binOpEvaluator unaryOpEvaluator funEvaluator
@@ -99,9 +91,9 @@ open Environment
 type Runner() =
     let defaultEnvironment = Environment.createEmptyGlobal ()
     let mutable currentEnvironment = defaultEnvironment
- 
-  
-    let rec runScopedStmt exp =        
+
+
+    let rec runScopedStmt (exp: ScopedStatement) : Result<Value, Errors.RunError> =
         let expressionEvaluator exp =
             let tryUpdateVar environment identifier newValue =
                 if environment.Variables.ContainsKey identifier then
@@ -120,7 +112,7 @@ type Runner() =
 
                 (vars().ContainsKey identifier, vars().[identifier])
                 |> Option.ofPair
-                |> Option.toResultWith (Errors.create "variable not defined" Errors.ErrorType.Other)
+                |> Option.toResultWith (Errors.create Errors.ErrorType.Other "variable not defined")
 
             let constEvaluator value = Result.Ok value
 
@@ -135,7 +127,7 @@ type Runner() =
 
                 let evalArithmeticExp op =
                     try
-                        (evalArithmeticExp val1 val2 op) |> Result.Ok
+                        (evalArithmeticExp val1 val2 op)
                     with
                     | _ -> (Errors.createResult "Arithmetic error" Errors.ErrorType.Other)
 
@@ -146,21 +138,36 @@ type Runner() =
                 match op with
                 | Negate -> failwith "Not implemented"
 
-            let funEvaluator (environment:Environment) identifier (actualParameters:Value list) =
-                let funcs  = match environment.Kind with 
-                                | EnvironmentKind.Global g -> g.Functions
-                                |_ -> invalidArg "environment" "functions cannot be defined in local scope"
-                monad' {
-                            let! f = (funcs.ContainsKey identifier, funcs.[identifier])
-                                    |> Option.ofPair
-                                    |> Option.toResultWith (Errors.create "function not defined" Errors.ErrorType.Other)
-                            let! t =  actualParameters |> Result.protect (List.zip f.Parameters) 
-                                                    |> Result.mapError (fun e -> Errors.create "wrong parameters count" Errors.ErrorType.Evaluation)
-                            let! newEnvironment = t |> Map.ofSeq |> Environment.createNested environment
-                            currentEnvironment <- newEnvironment
-                           // return runScopedStmt f.Body
-                    }            
-             
+            let funEvaluator (environment: Environment) identifier (actualParametersValues: Value list) =
+                let funcs =
+                    match environment.Kind with
+                    | EnvironmentKind.Global g -> g.Functions
+                    | _ -> invalidArg "environment" "functions cannot be defined in local scope"
+
+                let tmp =
+                    monad' {
+                        let! foundFunc =
+                            (funcs.ContainsKey identifier, funcs.[identifier])
+                            |> Option.ofPair
+                            |> Option.toResultWith (Errors.create Errors.ErrorType.Other "function not defined")
+
+                        let! paramsWithValues =
+                            actualParametersValues
+                            |> Result.protect (List.zip foundFunc.Parameters)
+                            |> Result.mapError
+                                (fun e -> Errors.create Errors.ErrorType.Evaluation "wrong parameters count")
+
+                        let newEnvironment =
+                            paramsWithValues
+                            |> Map.ofSeq
+                            |> Environment.createNested environment
+
+                        currentEnvironment <- newEnvironment
+                        return runScopedStmt (foundFunc.Body |> ScopedStatement.Block)
+                    }
+
+                tmp
+
             Evaluator.tryEvaluate
                 (tryUpdateVar currentEnvironment)
                 (tryGetVar currentEnvironment)
@@ -169,16 +176,24 @@ type Runner() =
                 unaryOpEvaluator
                 (funEvaluator currentEnvironment)
                 exp
-                
-        match exp with 
+
+        match exp with
         | ExpressionStatement exp -> expressionEvaluator exp
 
     let runStmt statement =
         match (statement, currentEnvironment.Kind) with
         | (FunDeclaration fd, Global ge) ->
-            (ge.Functions.TryAdd(fd.Name, fd),
-             Errors.create (sprintf "Function %s already defined" (Identifier.toStr fd.Name)) Errors.ErrorType.Other)
+            let message =
+                fd.Name
+                |> Identifier.toStr
+                |> sprintf "Function %s already defined"
+
+            (ge.Functions.TryAdd(fd.Name, fd), ())
             |> Option.ofPair
+            |> (message
+                |> (Errors.create Errors.ErrorType.Other
+                    >> Option.toResultWith))
+            |> Result.map Value.VoidValue
         | (ScopedStatement s, _) -> runScopedStmt s
         | _ -> failwith "internal error"
 

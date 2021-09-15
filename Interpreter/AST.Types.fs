@@ -1,22 +1,25 @@
 ﻿namespace Interpretr.AST.Types
 
+open System
+
 [<AutoOpen>]
 module Value =
     type Value =
         | IntValue of int
         | FloatValue of float
-
+        | VoidValue of unit
     let toFloat =
         function
         | IntValue v -> v |> float
         | FloatValue v -> v
-
+        | _ -> invalidArg "val" "cannot convert void to float"
     let private compute opFloat opInt v1 v2 =
         match (v1, v2) with
-        | (IntValue v1, IntValue v2) -> (opInt v1 v2) |> IntValue
+        | (IntValue v1, IntValue v2) -> (opInt v1 v2) |> IntValue |> Result.Ok
+        | (VoidValue _, _) | (_ , VoidValue _) -> Errors.createResult "cannot convert void to float" Errors.Other
         | (v1, v2) ->
             (opFloat (v1 |> toFloat) (v2 |> toFloat))
-            |> FloatValue
+            |> FloatValue |>  Result.Ok
     let private computeBool opFloat opInt v1 v2 : bool =
         match (v1, v2) with
         | (IntValue v1, IntValue v2) -> (opInt v1 v2) 
@@ -83,7 +86,7 @@ type Function =
       Parameters: Identifier list
       Body: Block }
 
-and Block = Block of ScopedStatement list
+and Block = ScopedStatement list
 
 and ScopedStatement =
     | ExpressionStatement of Expression
