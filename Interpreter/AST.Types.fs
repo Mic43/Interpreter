@@ -16,7 +16,7 @@ module Value =
     let private compute opFloat opInt v1 v2 =
         match (v1, v2) with
         | (IntValue v1, IntValue v2) -> (opInt v1 v2) |> IntValue |> Result.Ok
-        | (VoidValue _, _) | (_ , VoidValue _) -> Errors.createResult "cannot convert void to float" Errors.Other
+        | (VoidValue _, _) | (_ , VoidValue _) -> "cannot convert void to float" |> (Errors.createResult  Errors.Other)
         | (v1, v2) ->
             (opFloat (v1 |> toFloat) (v2 |> toFloat))
             |> FloatValue |>  Result.Ok
