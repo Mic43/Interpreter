@@ -108,11 +108,3 @@ module Evaluators =
 
             parametersValues
             |> Result.bind (fun v -> v |> funEvaluator fc.Name)
-//monad' {
-//    let! values =
-//        fc.ActualParameters |> traverse tryEvaluateRec
-//        //|> List.map
-//        //|> sequence
-
-//    return! (funEvaluator fc.Name values)
-//}

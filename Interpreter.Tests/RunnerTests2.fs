@@ -1,4 +1,4 @@
-﻿module RunnerTests
+module RunnerTests
 
 open Xunit
 open Interpreter.AST
@@ -91,4 +91,68 @@ module Run =
         (match actual with
          | Ok _ -> false
          | Error _ -> true)
-    
+
+    [<Property>]
+    let ``variable names in the same scope must be unique``
+        (varName: NonEmptyString)
+        varInit
+        (repeatsCount: PositiveInt)
+        =
+
+        let varIdent =
+            Identifier.createIdentifier (varName |> string)
+
+        let vDecl =
+            { Name = varIdent
+              Initializer = varInit |> Constant }
+
+        let program =
+            (fun _ -> vDecl |> VarDeclaration |> ScopedStatement)
+            |> List.init (repeatsCount.Get + 1)
+            |> Program
+
+        let sut = new Runner()
+
+        let actual = sut.Run(program)
+
+        (match actual with
+         | Ok _ -> false
+         | Error _ -> true)
+
+    [<Property>]
+    let ``variable names in the dufferent scopes can be the same``
+        (varName: NonEmptyString)
+        varInit
+        (level: PositiveInt)
+        =
+
+        let varIdent =
+            Identifier.createIdentifier (varName.Get)
+
+        let vDecl =
+            { Name = varIdent
+              Initializer = varInit |> Constant }
+            |> VarDeclaration
+
+        let blockize maxLevel statement =
+            let rec blockizeRec maxLevel curLevel statement =
+                
+                if curLevel = maxLevel then
+                    [statement]
+                else
+                    [statement;statement |> (blockizeRec maxLevel (curLevel + 1)) |> Block]
+                   
+
+            blockizeRec maxLevel 0 statement
+
+        let program =
+            vDecl
+            |> (blockize level.Get)
+            |> List.map ScopedStatement           
+            |> Program
+
+        let sut = new Runner()
+
+        let actual = sut.Run(program)
+
+        actual |> Option.ofResult |> Option.isSome

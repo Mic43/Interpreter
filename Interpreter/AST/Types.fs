@@ -107,9 +107,10 @@ and ScopedStatement =
     | VarDeclaration of VarDeclaration
     | PrintStatement of Expression
     | Block of Block
+    | Empty
 
 type Statement =
     | FunDeclaration of Function
-    | ScopedStatement of ScopedStatement
+    | ScopedStatement of ScopedStatement   
 
 type Program = Program of Statement list

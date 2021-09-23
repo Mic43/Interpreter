@@ -6,8 +6,8 @@ open FsCheck
 open FsCheck.Xunit
 open FSharpPlus
 
-module Traverse =
 
+module Traverse =   
     let (.=.) left right =
         left = right |@ sprintf "%A = %A" left right
     //[<Fact>]
@@ -87,6 +87,7 @@ module Traverse =
         match r with
         | Ok a -> a
         | _ -> false
+
 
 
 //[<Property>]

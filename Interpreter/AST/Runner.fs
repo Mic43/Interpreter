@@ -6,16 +6,14 @@ type Runner() =
     let defaultEnvironment = Environment.createEmptyGlobal ()
     let mutable currentEnvironment = defaultEnvironment
 
-    let ignoreResuls (res: Result<Value list, RunError>) =
-        res |> Result.map (fun _ -> Value.Void)
+    let ignoreResuls (res: Result<Value list, RunError>) = res |> Result.map (fun _ -> Value.Void)
 
     let getLastResultOrVoid (res: Result<Value list, RunError>) =
         res
         |> Result.map
             (fun vl ->
                 vl
-                |> (List.tryLast
-                    >> (Option.defaultValue Value.Void)))
+                |> (List.tryLast >> (Option.defaultValue Value.Void)))
 
     let tryPrint =
         function
@@ -60,6 +58,8 @@ type Runner() =
                 let! v = (expressionEvaluator exp)
                 return! (v |> tryPrint)
             }
+        | Empty _ -> //TODO: maybe put to environment
+            Value.Void |> Result.Ok
 
     let rec evaluateExpression exp =
         Evaluators.tryEvaluate
@@ -78,6 +78,9 @@ type Runner() =
         match (statement, currentEnvironment.Kind) with
         | (FunDeclaration fd, Global ge) -> Environment.tryDefineFunction ge fd
         | (ScopedStatement stmt, _) -> evaluateScopedStmt evaluateExpression stmt
+        | (FunDeclaration _, Scoped _) ->
+            "Function can be defined only on global scope"
+            |> Errors.createResult Other
 
     member this.Run =
         function
