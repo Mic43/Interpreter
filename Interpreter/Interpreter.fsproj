@@ -5,12 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Errors.fs" />
-    <Compile Include="Utils.fs" />
-    <Compile Include="AST.Types.fs" />
-    <Compile Include="AST.Environment.fs" />
-    <Compile Include="AST.ExpEvaluator.fs" />
-    <Compile Include="AST.Runner.fs" />
+    <Compile Include="AST\Utils.fs" />
+    <Compile Include="AST\Errors.fs" />
+    <Compile Include="AST\Types.fs" />
+    <Compile Include="AST\Environment.fs" />
+    <Compile Include="AST\Evaluators.fs" />
+    <Compile Include="AST\Runner.fs" />
   </ItemGroup>
 
   <ItemGroup>

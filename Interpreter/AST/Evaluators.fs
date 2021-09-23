@@ -1,36 +1,13 @@
-﻿namespace Interpretr.AST.ExpEvaluator
+﻿namespace Interpreter.AST
 
-open Interpretr.AST.Environment
-open Interpretr.AST.Types
 open FSharpPlus
 
-
 module Evaluators =
-    module Basic = 
-        let tryUpdateVar environment identifier newValue =
-            if environment.Variables.ContainsKey identifier then
-                environment.Variables.[identifier] = newValue
-                |> ignore
-
-                Result.Ok()
-            else
-                environment.Variables.[identifier] = newValue
-                |> ignore
-
-                "variable not defined"
-                |> (Errors.createResult Errors.ErrorType.Other)
-
-        let tryGetVar environment identifier =
-            let vars () = environment.Variables
-
-            (vars().ContainsKey identifier, vars().[identifier])
-            |> Option.ofPair
-            |> Option.toResultWith (Errors.create Errors.ErrorType.Other "variable not defined")
-
+    module Basic =              
+        open Value
         let constEvaluator value = Result.Ok value
 
-        let binaryOpEvaluator op val1 val2 =
-
+        let binaryOpEvaluator op (val1: Value) (val2: Value) =         
             let evalArithmeticExp val1 val2 =
                 function
                 | (Add _) -> (val1 + val2)
@@ -44,7 +21,7 @@ module Evaluators =
                 with
                 | _ ->
                     "Arithmetic error"
-                    |> (Errors.createResult Errors.ErrorType.Other)
+                    |> (Errors.createResult ErrorType.Other)
 
             match op with
             | BinaryOp.ArithmeticOp op -> (evalArithmeticExp op)
@@ -69,12 +46,12 @@ module Evaluators =
                 let! foundFunc =
                     (funcs.ContainsKey funIdentifier, funcs.[funIdentifier])
                     |> Option.ofPair
-                    |> Option.toResultWith (Errors.create Errors.ErrorType.Other "function not defined")
+                    |> Option.toResultWith (Errors.create ErrorType.Other "function not defined")
 
                 let! paramsWithValues =
                     actualParametersValues
                     |> Result.protect (List.zip foundFunc.Parameters)
-                    |> Result.mapError (fun e -> Errors.create Errors.ErrorType.Evaluation "wrong parameters count")
+                    |> Result.mapError (fun e -> Errors.create ErrorType.Evaluation "wrong parameters count")
 
                 let newEnvironment =
                     paramsWithValues
@@ -93,7 +70,7 @@ module Evaluators =
         unaryOpEvaluator
         funEvaluator
         (expression: Expression)
-        : Result<Value, Errors.RunError> =
+        : Result<Value, RunError> =
 
         let tryEvaluateRec =
             tryEvaluate varUpdater varEvaluator constEvaluator binOpEvaluator unaryOpEvaluator funEvaluator
@@ -126,11 +103,16 @@ module Evaluators =
                 return unaryOpEvaluator op value
             }
         | FunCall fc ->
-            monad' {
-                let! values =
-                    fc.ActualParameters
-                    |> List.map tryEvaluateRec
-                    |> sequence
+            let parametersValues =
+                fc.ActualParameters |> traverse tryEvaluateRec
 
-                return! funEvaluator fc.Name values
-            }
+            parametersValues
+            |> Result.bind (fun v -> v |> funEvaluator fc.Name)
+//monad' {
+//    let! values =
+//        fc.ActualParameters |> traverse tryEvaluateRec
+//        //|> List.map
+//        //|> sequence
+
+//    return! (funEvaluator fc.Name values)
+//}
