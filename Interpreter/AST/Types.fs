@@ -100,13 +100,13 @@ type Function =
       Parameters: Identifier list
       Body: Block }
 
-and Block = ScopedStatement list
+and Block = Block of ScopedStatement list
 
 and ScopedStatement =
     | ExpressionStatement of Expression
     | VarDeclaration of VarDeclaration
     | PrintStatement of Expression
-    | Block of Block
+    | BlockStatement of Block
     | Empty
 
 type Statement =

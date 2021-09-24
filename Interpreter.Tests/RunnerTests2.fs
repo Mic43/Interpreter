@@ -5,6 +5,7 @@ open Interpreter.AST
 open FsCheck
 open FsCheck.Xunit
 open FSharpPlus
+open Interpreter.AST
 
 module Run =
     let (.=.) left right =
@@ -19,7 +20,9 @@ module Run =
         let idFunDecl =
             { Name = funIdent
               Parameters = [ varIdent ]
-              Body = [ varIdent |> Var |> ExpressionStatement ] }
+              Body =
+                  [ varIdent |> Var |> ExpressionStatement ]
+                  |> Block }
 
         [ idFunDecl |> FunDeclaration
           { Name = funIdent
@@ -28,6 +31,20 @@ module Run =
           |> ExpressionStatement
           |> ScopedStatement ]
         |> Program
+
+    let blockize maxLevel statements =
+        let rec blockizeRec maxLevel curLevel statements =
+
+            if curLevel = maxLevel then
+                statements
+            else
+                statements
+                |> Block
+                |> BlockStatement
+                |> List.singleton
+                |> (blockizeRec maxLevel (curLevel + 1))
+
+        blockizeRec maxLevel 0 statements
 
     [<Property>]
     let ``identity function returns input when called with int argument`` (input: int) =
@@ -70,7 +87,9 @@ module Run =
         let idFunDecl =
             { Name = funIdent
               Parameters = [ varIdent ]
-              Body = [ varIdent |> Var |> ExpressionStatement ] }
+              Body =
+                  [ varIdent |> Var |> ExpressionStatement ]
+                  |> Block }
 
         let program =
             ((fun _ -> idFunDecl |> FunDeclaration)
@@ -114,7 +133,7 @@ module Run =
          | Error _ -> true)
 
     [<Property>]
-    let ``variable names in the dufferent scopes can be the same``
+    let ``variable names in the different scopes can have same names``
         (varName: NonEmptyString)
         varInit
         (level: PositiveInt)
@@ -130,21 +149,44 @@ module Run =
 
         let blockize maxLevel statement =
             let rec blockizeRec maxLevel curLevel statement =
-                
+
                 if curLevel = maxLevel then
-                    [statement]
+                    []
                 else
-                    [statement;statement |> (blockizeRec maxLevel (curLevel + 1)) |> Block]
-                   
+                    [ statement ]
+                    @ [ (statement |> (blockizeRec maxLevel (curLevel + 1)))
+                        |> Block
+                        |> BlockStatement ]
 
             blockizeRec maxLevel 0 statement
 
         let program =
             vDecl
             |> (blockize level.Get)
-            |> List.map ScopedStatement           
+            |> List.map ScopedStatement
             |> Program
 
         let actual = Runner.run program
 
+        actual |> Option.ofResult |> Option.isSome
+
+    [<Property>]
+    let ``it is possible to access variable in the same scope`` (varName: NonEmptyString) varInit (level: PositiveInt) =
+
+        let varIdent =
+            Identifier.createIdentifier (varName.Get)
+
+        let vDecl =
+            { Name = varIdent
+              Initializer = varInit |> Constant }
+            |> VarDeclaration
+
+        let program =
+            [ vDecl
+              (varIdent |> Var |> ExpressionStatement) ]
+            |> (blockize (level.Get - 1))
+            |> List.map ScopedStatement
+            |> Program
+
+        let actual = Runner.run program
         actual |> Option.ofResult |> Option.isSome

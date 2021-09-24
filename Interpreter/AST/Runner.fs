@@ -5,17 +5,17 @@ open FSharpPlus
 module Runner =
     // let defaultEnvironment = Environment.createEmptyGlobal ()
     // let mutable currentEnvironment = defaultEnvironment
+    
+    let private ignoreResuls (res: Result<Value list, RunError>) = res |> Result.map (fun _ -> Value.Void)
 
-    let ignoreResuls (res: Result<Value list, RunError>) = res |> Result.map (fun _ -> Value.Void)
-
-    let getLastResultOrVoid (res: Result<Value list, RunError>) =
+    let private getLastResultOrVoid (res: Result<Value list, RunError>) =
         res
         |> Result.map
             (fun vl ->
                 vl
                 |> (List.tryLast >> (Option.defaultValue Value.Void)))
 
-    let tryPrint =
+    let private tryPrint =
         function
         | IntValue iv ->
             printf "%i" iv
@@ -27,11 +27,10 @@ module Runner =
             "Cannot print void value"
             |> (Errors.createResult Other)
 
-
-    let rec evaluateScopedStmt (environment: ExecutionEnvironment) (exp: ScopedStatement) : Result<Value, RunError> =
+    let rec private evaluateScopedStmt (environment: ExecutionEnvironment) (exp: ScopedStatement) : Result<Value, RunError> =
         //let evaluateScopedStmtRec = evaluateScopedStmt environment
 
-        let evaluateBlock block =
+        let evaluateBlock (Block block) =
             block
             |> traverse (evaluateScopedStmt environment)
             |> getLastResultOrVoid
@@ -54,7 +53,7 @@ module Runner =
                     |> Result.mapError (fun e -> Errors.create ErrorType.Evaluation "wrong parameters count")
 
                 Environment.nestNewEnvironment environment (paramsWithValues |> Map.ofSeq)
-                let! res = evaluateBlock foundFunc.Body
+                let! res = evaluateBlock foundFunc.Body                
                 environment |> Environment.returnToParent
                 return res
             }
@@ -71,7 +70,7 @@ module Runner =
 
         match exp with
         | ExpressionStatement exp -> evaluateExpression exp
-        | Block block ->
+        | BlockStatement block ->
             environment |> Environment.nestNewEmptyEnvironment
 
             monad' {
@@ -95,7 +94,7 @@ module Runner =
             }
         | Empty _ -> Value.Void |> Result.Ok
 
-    let evaluateStmt (environment: ExecutionEnvironment) statement =
+    let private evaluateStmt (environment: ExecutionEnvironment) statement =
         match (statement, environment.IsCurrentGlobal) with
         | (FunDeclaration fd, true) -> Environment.tryDefineFunction environment fd
         | (FunDeclaration _, false) ->
