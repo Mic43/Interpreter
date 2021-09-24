@@ -33,9 +33,9 @@ module Run =
     let ``identity function returns input when called with int argument`` (input: int) =
         let inputVal = input |> IntValue
 
-        let sut = new Runner()
+        //let sut = new Runner()
 
-        let actual = sut.Run(idFuncProgram inputVal)
+        let actual = Runner.run (idFuncProgram inputVal)
 
         let expected = inputVal |> Ok
 
@@ -45,9 +45,7 @@ module Run =
     let ``identity function returns input when called with float argument`` (input: NormalFloat) =
         let inputVal = input |> float |> FloatValue
 
-        let sut = new Runner()
-
-        let actual = sut.Run(idFuncProgram inputVal)
+        let actual = Runner.run (idFuncProgram inputVal)
 
         let expected = inputVal |> Result.Ok
 
@@ -84,9 +82,7 @@ module Run =
                 |> ScopedStatement ]
             |> Program
 
-        let sut = new Runner()
-
-        let actual = sut.Run(program)
+        let actual = Runner.run program
 
         (match actual with
          | Ok _ -> false
@@ -111,9 +107,7 @@ module Run =
             |> List.init (repeatsCount.Get + 1)
             |> Program
 
-        let sut = new Runner()
-
-        let actual = sut.Run(program)
+        let actual = Runner.run program
 
         (match actual with
          | Ok _ -> false
@@ -151,8 +145,6 @@ module Run =
             |> List.map ScopedStatement           
             |> Program
 
-        let sut = new Runner()
-
-        let actual = sut.Run(program)
+        let actual = Runner.run program
 
         actual |> Option.ofResult |> Option.isSome

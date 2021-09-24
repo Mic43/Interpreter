@@ -2,65 +2,35 @@
 
 open FSharpPlus
 
-module Evaluators =
-    module Basic =              
-        open Value
-        let constEvaluator value = Result.Ok value
+type ExpEvaluator = Expression -> Result<Value, RunError>
 
-        let binaryOpEvaluator op (val1: Value) (val2: Value) =         
-            let evalArithmeticExp val1 val2 =
-                function
-                | (Add _) -> (val1 + val2)
-                | (Sub _) -> (val1 - val2)
-                | (Mul _) -> (val1 * val2)
-                | (Div _) -> (val1 / val2)
+module ExpEvaluator =
 
-            let evalArithmeticExp op =
-                try
-                    (evalArithmeticExp val1 val2 op)
-                with
-                | _ ->
-                    "Arithmetic error"
-                    |> (Errors.createResult ErrorType.Other)
+    open Value
+    let constEvaluator value = Result.Ok value
 
-            match op with
-            | BinaryOp.ArithmeticOp op -> (evalArithmeticExp op)
+    let binaryOpEvaluator op (val1: Value) (val2: Value) =
+        let evalArithmeticExp val1 val2 =
+            function
+            | (Add _) -> (val1 + val2)
+            | (Sub _) -> (val1 - val2)
+            | (Mul _) -> (val1 * val2)
+            | (Div _) -> (val1 / val2)
 
-        let unaryOpEvaluator op value =
-            match op with
-            | Negate -> failwith "Not implemented"
+        let evalArithmeticExp op =
+            try
+                (evalArithmeticExp val1 val2 op)
+            with
+            | _ ->
+                "Arithmetic error"
+                |> (Errors.createResult ErrorType.Other)
 
-        let funEvaluator
-            curretEnvironmentSwapper
-            evaluateScopedStmt
-            (environment: Environment)
-            funIdentifier
-            (actualParametersValues: Value list)
-            =
-            let funcs =
-                match environment.Kind with
-                | EnvironmentKind.Global g -> g.Functions
-                | _ -> invalidArg "environment" "functions cannot be defined in local scope"
+        match op with
+        | BinaryOp.ArithmeticOp op -> (evalArithmeticExp op)
 
-            monad' {
-                let! foundFunc =
-                    (funcs.ContainsKey funIdentifier, funcs.[funIdentifier])
-                    |> Option.ofPair
-                    |> Option.toResultWith (Errors.create ErrorType.Other "function not defined")
-
-                let! paramsWithValues =
-                    actualParametersValues
-                    |> Result.protect (List.zip foundFunc.Parameters)
-                    |> Result.mapError (fun e -> Errors.create ErrorType.Evaluation "wrong parameters count")
-
-                let newEnvironment =
-                    paramsWithValues
-                    |> Map.ofSeq
-                    |> Environment.createNested environment
-
-                curretEnvironmentSwapper newEnvironment //currentEnvironment <- newEnvironment
-                return! evaluateScopedStmt (foundFunc.Body |> ScopedStatement.Block)
-            }
+    let unaryOpEvaluator op value =
+        match op with
+        | Negate -> failwith "Not implemented"
 
     let rec tryEvaluate
         varUpdater

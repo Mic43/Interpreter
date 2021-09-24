@@ -2,9 +2,9 @@
 
 open FSharpPlus
 
-type Runner() =
-    let defaultEnvironment = Environment.createEmptyGlobal ()
-    let mutable currentEnvironment = defaultEnvironment
+module Runner =
+    // let defaultEnvironment = Environment.createEmptyGlobal ()
+    // let mutable currentEnvironment = defaultEnvironment
 
     let ignoreResuls (res: Result<Value list, RunError>) = res |> Result.map (fun _ -> Value.Void)
 
@@ -27,64 +27,85 @@ type Runner() =
             "Cannot print void value"
             |> (Errors.createResult Other)
 
-    let returnToParentEnvironment () =
-        currentEnvironment <-
-            (match currentEnvironment.Kind with
-             | Scoped s -> s.Parent
-             | Global _ -> failwith "internal error")
 
-    let rec evaluateScopedStmt expressionEvaluator (exp: ScopedStatement) : Result<Value, RunError> =
-        match exp with
-        | ExpressionStatement exp -> expressionEvaluator exp
-        | Block block ->
+    let rec evaluateScopedStmt (environment: ExecutionEnvironment) (exp: ScopedStatement) : Result<Value, RunError> =
+        //let evaluateScopedStmtRec = evaluateScopedStmt environment
+
+        let evaluateBlock block =
             block
-            |> traverse (evaluateScopedStmt expressionEvaluator)
+            |> traverse (evaluateScopedStmt environment)
             |> getLastResultOrVoid
-            |> Result.bind
-                (fun res ->
-                    do returnToParentEnvironment ()
-                    res |> Result.Ok)
+
+        let evaluateFunction funIdentifier (actualParametersValues: Value list) =
+            let funcs =
+                match environment.CurrentEnvironment.Kind with
+                | Global g -> g.Functions
+                | _ -> invalidArg "environment" "functions cannot be defined in local scope"
+
+            monad' {
+                let! foundFunc =
+                    (funcs.ContainsKey funIdentifier, funcs.[funIdentifier])
+                    |> Option.ofPair
+                    |> Option.toResultWith (Errors.create ErrorType.Other "function not defined")
+
+                let! paramsWithValues =
+                    actualParametersValues
+                    |> Result.protect (List.zip foundFunc.Parameters)
+                    |> Result.mapError (fun e -> Errors.create ErrorType.Evaluation "wrong parameters count")
+
+                Environment.nestNewEnvironment environment (paramsWithValues |> Map.ofSeq)
+                let! res = evaluateBlock foundFunc.Body
+                environment |> Environment.returnToParent
+                return res
+            }
+
+        let evaluateExpression exp =
+            ExpEvaluator.tryEvaluate
+                (Environment.tryUpdateVar environment)
+                (Environment.tryGetVar environment)
+                ExpEvaluator.constEvaluator
+                ExpEvaluator.binaryOpEvaluator
+                ExpEvaluator.unaryOpEvaluator
+                evaluateFunction
+                exp
+
+        match exp with
+        | ExpressionStatement exp -> evaluateExpression exp
+        | Block block ->
+            environment |> Environment.nestNewEmptyEnvironment
+
+            monad' {
+                let! res = evaluateBlock block
+                environment |> Environment.returnToParent
+                return res
+            }
         | VarDeclaration vd ->
             monad' {
-                let! initVal = vd.Initializer |> expressionEvaluator
+                let! initVal = vd.Initializer |> evaluateExpression
 
                 return!
-                    (Environment.tryDefineVar currentEnvironment vd.Name initVal)
+                    (Environment.tryDefineVar environment vd.Name initVal)
                     |> (Result.map Value.createVoid)
             }
 
         | PrintStatement exp -> //TODO: maybe put to environment
             monad' {
-                let! v = (expressionEvaluator exp)
+                let! v = (evaluateExpression exp)
                 return! (v |> tryPrint)
             }
-        | Empty _ -> //TODO: maybe put to environment
-            Value.Void |> Result.Ok
+        | Empty _ -> Value.Void |> Result.Ok
 
-    let rec evaluateExpression exp =
-        Evaluators.tryEvaluate
-            (Environment.tryUpdateVar currentEnvironment)
-            (Environment.tryGetVar currentEnvironment)
-            Evaluators.Basic.constEvaluator
-            Evaluators.Basic.binaryOpEvaluator
-            Evaluators.Basic.unaryOpEvaluator
-            (Evaluators.Basic.funEvaluator
-                (fun newEnv -> currentEnvironment <- newEnv)
-                (evaluateScopedStmt evaluateExpression)
-                currentEnvironment)
-            exp
-
-    let evaluateStmt statement =
-        match (statement, currentEnvironment.Kind) with
-        | (FunDeclaration fd, Global ge) -> Environment.tryDefineFunction ge fd
-        | (ScopedStatement stmt, _) -> evaluateScopedStmt evaluateExpression stmt
-        | (FunDeclaration _, Scoped _) ->
+    let evaluateStmt (environment: ExecutionEnvironment) statement =
+        match (statement, environment.IsCurrentGlobal) with
+        | (FunDeclaration fd, true) -> Environment.tryDefineFunction environment fd
+        | (FunDeclaration _, false) ->
             "Function can be defined only on global scope"
             |> Errors.createResult Other
+        | (ScopedStatement stmt, _) -> evaluateScopedStmt environment stmt
 
-    member this.Run =
-        function
-        | Program program ->
-            program
-            |> (Utils.traverseM evaluateStmt)
-            |> getLastResultOrVoid
+    let run (Program statementsList) =
+        let environment = Environment.createEmpty ()
+
+        statementsList
+        |> (Utils.traverseM (evaluateStmt environment))
+        |> getLastResultOrVoid
