@@ -22,7 +22,7 @@ module Run =
               Parameters = [ varIdent ]
               Body =
                   [ varIdent |> Var |> ExpressionStatement ]
-                  |> Block }
+                  |> Block.Create }
 
         [ idFunDecl |> FunDeclaration
           { Name = funIdent
@@ -39,7 +39,7 @@ module Run =
                 statements
             else
                 statements
-                |> Block
+                |> Block.Create
                 |> BlockStatement
                 |> List.singleton
                 |> (blockizeRec maxLevel (curLevel + 1))
@@ -89,7 +89,7 @@ module Run =
               Parameters = [ varIdent ]
               Body =
                   [ varIdent |> Var |> ExpressionStatement ]
-                  |> Block }
+                  |> Block.Create  }
 
         let program =
             ((fun _ -> idFunDecl |> FunDeclaration)
@@ -155,7 +155,7 @@ module Run =
                 else
                     [ statement ]
                     @ [ (statement |> (blockizeRec maxLevel (curLevel + 1)))
-                        |> Block
+                        |> Block.Create
                         |> BlockStatement ]
 
             blockizeRec maxLevel 0 statement
@@ -190,3 +190,37 @@ module Run =
 
         let actual = Runner.run program
         actual |> Option.ofResult |> Option.isSome
+    // [<Property>]
+    // let ``it is possible to access variable from ancestor scope`` (varName: NonEmptyString) varInit (level: PositiveInt) =
+
+    //     let varIdent =
+    //         Identifier.createIdentifier (varName.Get)
+
+    //     let vDecl =
+    //         { Name = varIdent
+    //           Initializer = varInit |> Constant }
+    //         |> VarDeclaration
+
+    //     let genProg declLevel accessLevelOffset statement  =
+    //         let rec genProgRec declLevel accessLevelOffset curLevel =
+                
+    //             if curLevel =  declLevel then
+    //                 [ vDecl ]
+    //             else
+    //                 [  (varIdent |> Var |> ExpressionStatement) ]
+    //                 @ [ (statement |> (blockizeRec maxLevel (curLevel + 1)))
+    //                     |> Block
+    //                     |> BlockStatement ]
+
+    //         blockizeRec maxLevel 0 statement
+
+    //     let program =
+    //         [ vDecl
+    //           (varIdent |> Var |> ExpressionStatement) ]
+    //         |> (blockize (level.Get - 1))
+    //         |> List.map ScopedStatement
+    //         |> Program
+
+    //     let actual = Runner.run program
+    //     actual |> Option.ofResult |> Option.isSome
+ 

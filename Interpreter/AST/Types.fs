@@ -15,6 +15,8 @@ module Value =
         | FloatValue v -> v
         | _ -> invalidArg "val" "cannot convert void to float"
 
+    let toStr (v: Value) = v.ToString()
+
     let private compute opFloat opInt v1 v2 =
         match (v1, v2) with
         | (IntValue v1, IntValue v2) -> (opInt v1 v2) |> IntValue |> Result.Ok
@@ -39,8 +41,6 @@ module Value =
 
     let Void = () |> VoidValue
     let createVoid () = Void
-//let (>) v1 v2 = computeBool (>) (>) v1 v2
-
 
 type Identifier = private Identifier of string
 
@@ -95,23 +95,36 @@ type VarDeclaration =
     { Name: Identifier
       Initializer: Expression }
 
-type Function =
-    { Name: Identifier
-      Parameters: Identifier list
-      Body: Block }
-
-and Block = Block of ScopedStatement list
-
-and ScopedStatement =
+type ScopedStatement =
     | ExpressionStatement of Expression
     | VarDeclaration of VarDeclaration
     | PrintStatement of Expression
     | BlockStatement of Block
     | Empty
 
+and Block =
+    { Content: ScopedStatement list }
+    static member Create content = { Content = content }
+
+type Function =
+    { Name: Identifier
+      Parameters: Identifier list
+      Body: Block }
+
+type CompiledFunction =
+    { Name: Identifier
+      Execute: (Value list -> Result<Value, RunError>) }
+
+type Callable =
+    | Function of Function
+    | CompiledFunction of CompiledFunction
+    member this.Name =
+        match this with
+        | Function f -> f.Name
+        | CompiledFunction c -> c.Name
+
 type Statement =
     | FunDeclaration of Function
-    | ScopedStatement of ScopedStatement   
+    | ScopedStatement of ScopedStatement
 
 type Program = Program of Statement list
-    

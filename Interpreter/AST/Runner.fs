@@ -3,9 +3,6 @@
 open FSharpPlus
 
 module Runner =
-    // let defaultEnvironment = Environment.createEmptyGlobal ()
-    // let mutable currentEnvironment = defaultEnvironment
-    
     let private ignoreResuls (res: Result<Value list, RunError>) = res |> Result.map (fun _ -> Value.Void)
 
     let private getLastResultOrVoid (res: Result<Value list, RunError>) =
@@ -27,11 +24,14 @@ module Runner =
             "Cannot print void value"
             |> (Errors.createResult Other)
 
-    let rec private evaluateScopedStmt (environment: ExecutionEnvironment) (exp: ScopedStatement) : Result<Value, RunError> =
+    let rec private evaluateScopedStmt
+        (environment: ExecutionEnvironment)
+        (exp: ScopedStatement)
+        : Result<Value, RunError> =
         //let evaluateScopedStmtRec = evaluateScopedStmt environment
 
-        let evaluateBlock (Block block) =
-            block
+        let evaluateBlock block =
+            block.Content
             |> traverse (evaluateScopedStmt environment)
             |> getLastResultOrVoid
 
@@ -47,15 +47,19 @@ module Runner =
                     |> Option.ofPair
                     |> Option.toResultWith (Errors.create ErrorType.Other "function not defined")
 
-                let! paramsWithValues =
-                    actualParametersValues
-                    |> Result.protect (List.zip foundFunc.Parameters)
-                    |> Result.mapError (fun e -> Errors.create ErrorType.Evaluation "wrong parameters count")
+                match foundFunc with
+                | Function func ->
+                    let! paramsWithValues =
+                        actualParametersValues
+                        |> Result.protect (List.zip func.Parameters)
+                        |> Result.mapError (fun e -> Errors.create ErrorType.Evaluation "wrong parameters count")
 
-                Environment.nestNewEnvironment environment (paramsWithValues |> Map.ofSeq)
-                let! res = evaluateBlock foundFunc.Body                
-                environment |> Environment.returnToParent
-                return res
+                    Environment.nestNewEnvironment environment (paramsWithValues |> Map.ofSeq)
+                    let! res = evaluateBlock func.Body
+                    environment |> Environment.returnToParent
+
+                    return res
+                | CompiledFunction compiledFun -> return! compiledFun.Execute actualParametersValues
             }
 
         let evaluateExpression exp =
@@ -96,7 +100,7 @@ module Runner =
 
     let private evaluateStmt (environment: ExecutionEnvironment) statement =
         match (statement, environment.IsCurrentGlobal) with
-        | (FunDeclaration fd, true) -> Environment.tryDefineFunction environment fd
+        | (FunDeclaration fd, true) -> Environment.tryDefineCallable environment (fd |> Function)
         | (FunDeclaration _, false) ->
             "Function can be defined only on global scope"
             |> Errors.createResult Other

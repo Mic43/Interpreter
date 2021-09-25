@@ -5,7 +5,7 @@ open Interpreter.AST
 open FSharpPlus
 
 type Global =
-    { Functions: Dictionary<Identifier, Function> }
+    { Functions: Dictionary<Identifier, Callable> }
 
 type Scoped = { Parent: Environment }
 
@@ -33,7 +33,7 @@ module Environment =
     let private createEmptyGlobal () =
         { Variables = new Dictionary<Identifier, Value>()
           Kind =
-              { Functions = new Dictionary<Identifier, Function>() }
+              { Functions = new Dictionary<Identifier, Callable>() }
               |> EnvironmentKind.Global }
 
     let create defaultGlobal =
@@ -78,15 +78,15 @@ module Environment =
         |> Option.toResultWith (Errors.create ErrorType.Other "variable not defined")
 
 
-    let tryDefineFunction enviroment fdecl =
+    let tryDefineCallable enviroment (callable:Callable) =
         let message =
-            fdecl.Name
+            callable.Name
             |> Identifier.toStr
             |> sprintf "Function %s already defined"
-
+        
         match enviroment.Global.Kind with
         | Global g ->
-            (g.Functions.TryAdd(fdecl.Name, fdecl), ())
+            (g.Functions.TryAdd(callable.Name, callable), ())
             |> Option.ofPair
             |> (message
                 |> (Errors.create ErrorType.Other

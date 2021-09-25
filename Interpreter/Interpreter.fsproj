@@ -9,6 +9,7 @@
     <Compile Include="AST\Errors.fs" />
     <Compile Include="AST\Types.fs" />
     <Compile Include="AST\Environment.fs" />
+     <Compile Include="AST\Printer.fs" />
     <Compile Include="AST\Evaluators.fs" />
     <Compile Include="AST\Runner.fs" />
   </ItemGroup>
