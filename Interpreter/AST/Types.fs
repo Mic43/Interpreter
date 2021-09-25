@@ -18,7 +18,7 @@ module Value =
     let toStr =
         function
         | IntValue i -> sprintf "%d" i
-        | FloatValue f ->  sprintf "%f" f
+        | FloatValue f -> sprintf "%f" f
         | VoidValue _ -> "null"
 
     let private compute opFloat opInt v1 v2 =
@@ -46,15 +46,18 @@ module Value =
     let Void = () |> VoidValue
     let createVoid () = Void
 
-type Identifier = private Identifier of string
+type Identifier =
+    private
+    | Identifier of string
+    member this.ToStr() =
+        match this with
+        | Identifier s -> s
 
 module Identifier =
     let tryCreateIdentifier s = Identifier s
     let createIdentifier s = (tryCreateIdentifier s)
 
-    let toStr =
-        function
-        | Identifier s -> s
+    let toStr (identifier: Identifier) = identifier.ToStr()
 
 type UnaryOp =
     | Negate

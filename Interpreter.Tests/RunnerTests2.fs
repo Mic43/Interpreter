@@ -191,6 +191,10 @@ module Run =
         let actual = Runner.run program
         actual |> Option.ofResult |> Option.isSome
 
+
+    let outProgram program = 
+        sprintf "\n%s" (program |> Printer.toStr)
+
     [<Property(Verbose = true)>]
     let ``it is possible to access variable from ancestor scope``
         (varName: NonEmptyString)
@@ -216,5 +220,4 @@ module Run =
         let actual = Runner.run program
 
         // actual  .=. (varInit |> Result.Ok)
-        actual |> Option.ofResult |> Option.isSome
-        |@ sprintf "\n%s" (program |> Printer.toStr)
+        actual |> Option.ofResult |> Option.isSome       
