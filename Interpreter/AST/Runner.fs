@@ -1,6 +1,7 @@
 ﻿namespace Interpreter.AST
 
 open FSharpPlus
+open System.Collections.Generic
 
 module Runner =
     let private ignoreResuls (res: Result<Value list, RunError>) = res |> Result.map (fun _ -> Value.Void)
@@ -12,17 +13,6 @@ module Runner =
                 vl
                 |> (List.tryLast >> (Option.defaultValue Value.Void)))
 
-    let private tryPrint =
-        function
-        | IntValue iv ->
-            printf "%i" iv
-            Value.Void |> Result.Ok
-        | FloatValue fv ->
-            printf "%f" fv
-            Value.Void |> Result.Ok
-        | VoidValue _ ->
-            "Cannot print void value"
-            |> (Errors.createResult Other)
 
     let rec private evaluateScopedStmt
         (environment: ExecutionEnvironment)
@@ -91,11 +81,6 @@ module Runner =
                     |> (Result.map Value.createVoid)
             }
 
-        | PrintStatement exp -> //TODO: maybe put to environment
-            monad' {
-                let! v = (evaluateExpression exp)
-                return! (v |> tryPrint)
-            }
         | Empty _ -> Value.Void |> Result.Ok
 
     let private evaluateStmt (environment: ExecutionEnvironment) statement =
@@ -107,7 +92,18 @@ module Runner =
         | (ScopedStatement stmt, _) -> evaluateScopedStmt environment stmt
 
     let run (Program statementsList) =
-        let environment = Environment.createEmpty ()
+        let defaultEnvironment = [ "print", DefaultEnvironment.tryPrint ]
+
+        let createDefaultEnvironment () =
+            defaultEnvironment
+            |> List.map (fun (name, func) -> Callable.FromFunction(name |> Identifier.createIdentifier) func)
+            |> List.map (fun callable -> (callable.Name, callable))
+            |> Map.ofList
+            |> Dictionary
+            |> Environment.CreateGlobal
+
+        let environment =
+            Environment.create (createDefaultEnvironment ())
 
         statementsList
         |> (Utils.traverseM (evaluateStmt environment))

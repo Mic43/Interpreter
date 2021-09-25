@@ -15,7 +15,11 @@ module Value =
         | FloatValue v -> v
         | _ -> invalidArg "val" "cannot convert void to float"
 
-    let toStr (v: Value) = v.ToString()
+    let toStr =
+        function
+        | IntValue i -> sprintf "%d" i
+        | FloatValue f ->  sprintf "%f" f
+        | VoidValue _ -> "null"
 
     let private compute opFloat opInt v1 v2 =
         match (v1, v2) with
@@ -98,7 +102,6 @@ type VarDeclaration =
 type ScopedStatement =
     | ExpressionStatement of Expression
     | VarDeclaration of VarDeclaration
-    | PrintStatement of Expression
     | BlockStatement of Block
     | Empty
 
@@ -122,6 +125,9 @@ type Callable =
         match this with
         | Function f -> f.Name
         | CompiledFunction c -> c.Name
+
+    static member FromFunction name f =
+        { Name = name; Execute = f } |> CompiledFunction
 
 type Statement =
     | FunDeclaration of Function

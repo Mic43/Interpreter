@@ -8,7 +8,7 @@ module Printer =
         | Unary (_, _) -> failwith "Not Implemented"
         | Assignment (_, _) -> failwith "Not Implemented"
         | FunCall (_) -> failwith "Not Implemented"
-        | Var (_) -> failwith "Not Implemented"
+        | Var (ident) -> ident |> Identifier.toStr
 
     let rec scopedStmtToStr (stmt: ScopedStatement) =
         match stmt with
@@ -16,15 +16,14 @@ module Printer =
         | ExpressionStatement e -> expressionToStr e
         | VarDeclaration (vd) ->
             sprintf
-                "%s = %A"
+                "%s = %s"
                 (vd.Name |> Identifier.toStr)
                 (vd.Initializer
                  |> ExpressionStatement
                  |> scopedStmtToStr)
-        | PrintStatement (_) -> failwith "Not Implemented"
         | BlockStatement block ->
             sprintf
-                "{\n %s }"
+                "{\n %s \n}"
                 (block.Content
                  |> (List.map scopedStmtToStr)
                  |> List.reduce (fun acc s -> sprintf "%s\n%s" acc s))
@@ -44,4 +43,7 @@ module Printer =
                  |> stmtToStr)
         | ScopedStatement stmt -> scopedStmtToStr stmt
 
-    let toStr (Program statementsList) = statementsList |> List.map stmtToStr
+    let toStr (Program statementsList) =
+        statementsList
+        |> List.map stmtToStr
+        |> List.reduce (fun acc s -> sprintf "%s\n%s" acc s)

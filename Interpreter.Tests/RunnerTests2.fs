@@ -89,7 +89,7 @@ module Run =
               Parameters = [ varIdent ]
               Body =
                   [ varIdent |> Var |> ExpressionStatement ]
-                  |> Block.Create  }
+                  |> Block.Create }
 
         let program =
             ((fun _ -> idFunDecl |> FunDeclaration)
@@ -190,37 +190,31 @@ module Run =
 
         let actual = Runner.run program
         actual |> Option.ofResult |> Option.isSome
-    // [<Property>]
-    // let ``it is possible to access variable from ancestor scope`` (varName: NonEmptyString) varInit (level: PositiveInt) =
 
-    //     let varIdent =
-    //         Identifier.createIdentifier (varName.Get)
+    [<Property(Verbose = true)>]
+    let ``it is possible to access variable from ancestor scope``
+        (varName: NonEmptyString)
+        varInit
+        (level: PositiveInt)
+        =
 
-    //     let vDecl =
-    //         { Name = varIdent
-    //           Initializer = varInit |> Constant }
-    //         |> VarDeclaration
+        let varIdent =
+            Identifier.createIdentifier (varName.Get)
 
-    //     let genProg declLevel accessLevelOffset statement  =
-    //         let rec genProgRec declLevel accessLevelOffset curLevel =
-                
-    //             if curLevel =  declLevel then
-    //                 [ vDecl ]
-    //             else
-    //                 [  (varIdent |> Var |> ExpressionStatement) ]
-    //                 @ [ (statement |> (blockizeRec maxLevel (curLevel + 1)))
-    //                     |> Block
-    //                     |> BlockStatement ]
+        let vDecl =
+            { Name = varIdent
+              Initializer = varInit |> Constant }
+            |> VarDeclaration
 
-    //         blockizeRec maxLevel 0 statement
+        let varUsage = (varIdent |> Var |> ExpressionStatement)
 
-    //     let program =
-    //         [ vDecl
-    //           (varIdent |> Var |> ExpressionStatement) ]
-    //         |> (blockize (level.Get - 1))
-    //         |> List.map ScopedStatement
-    //         |> Program
+        let program =
+            [ vDecl ] @ blockize (level.Get - 1) [ varUsage ]
+            |> List.map ScopedStatement
+            |> Program
 
-    //     let actual = Runner.run program
-    //     actual |> Option.ofResult |> Option.isSome
- 
+        let actual = Runner.run program
+
+        // actual  .=. (varInit |> Result.Ok)
+        actual |> Option.ofResult |> Option.isSome
+        |@ sprintf "\n%s" (program |> Printer.toStr)

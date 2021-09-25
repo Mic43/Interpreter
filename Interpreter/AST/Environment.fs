@@ -5,7 +5,7 @@ open Interpreter.AST
 open FSharpPlus
 
 type Global =
-    { Functions: Dictionary<Identifier, Callable> }
+    { Functions: IDictionary<Identifier, Callable> }
 
 type Scoped = { Parent: Environment }
 
@@ -16,6 +16,9 @@ and EnvironmentKind =
 and Environment =
     { Variables: Dictionary<Identifier, Value>
       Kind: EnvironmentKind }
+    static member CreateGlobal(functions: IDictionary<Identifier, Callable>) =
+        { Variables = new Dictionary<Identifier, Value>()
+          Kind = { Functions = functions } |> Global }
 
 type ExecutionEnvironment =
     private
@@ -34,7 +37,7 @@ module Environment =
         { Variables = new Dictionary<Identifier, Value>()
           Kind =
               { Functions = new Dictionary<Identifier, Callable>() }
-              |> EnvironmentKind.Global }
+              |> Global }
 
     let create defaultGlobal =
         { Global = defaultGlobal
@@ -73,17 +76,23 @@ module Environment =
     let tryGetVar (environment: ExecutionEnvironment) identifier =
         let vars () = environment.Current.Variables
 
-        (vars().ContainsKey identifier, vars().[identifier])
+        (vars().ContainsKey identifier, vars().GetValueOrDefault identifier)
         |> Option.ofPair
-        |> Option.toResultWith (Errors.create ErrorType.Other "variable not defined")
+        |> Option.toResultWith (
+            Errors.create
+                ErrorType.Other
+                (identifier
+                 |> Identifier.toStr
+                 |> sprintf "variable not defined: %s")
+        )
 
 
-    let tryDefineCallable enviroment (callable:Callable) =
+    let tryDefineCallable enviroment (callable: Callable) =
         let message =
             callable.Name
             |> Identifier.toStr
             |> sprintf "Function %s already defined"
-        
+
         match enviroment.Global.Kind with
         | Global g ->
             (g.Functions.TryAdd(callable.Name, callable), ())
