@@ -8,7 +8,7 @@ type Identifier =
         | Identifier s -> s
 
 module Identifier =
-    let tryCreateIdentifier s = Identifier s
-    let createIdentifier s = (tryCreateIdentifier s)
+    let tryCreate s = Identifier s
+    let create s = (tryCreate s)
 
     let toStr (identifier: Identifier) = identifier.ToStr()

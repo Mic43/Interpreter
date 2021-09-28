@@ -18,7 +18,7 @@ module Runner =
         (environment: ExecutionEnvironment)
         (exp: ScopedStatement)
         : Result<Value, RunError> =
-        //let evaluateScopedStmtRec = evaluateScopedStmt environment
+        let evaluateScopedStmtRec = evaluateScopedStmt environment
 
         let evaluateBlock block =
             block.Content
@@ -82,6 +82,15 @@ module Runner =
             }
 
         | Empty _ -> Value.Void |> Result.Ok
+        | IfStatement (ifs) ->
+            monad' {
+                let! condRes = ifs.Condition |> evaluateExpression
+
+                if (condRes |> Value.toBool) = true then
+                    return! (ifs.OnTrue |> evaluateScopedStmtRec)
+                else
+                    return! (ifs.OnFalse |> evaluateScopedStmtRec)
+            }
 
     let private evaluateStmt (environment: ExecutionEnvironment) statement =
         match (statement, environment.IsCurrentGlobal) with
@@ -91,14 +100,12 @@ module Runner =
             |> Errors.createResult Other
         | (ScopedStatement stmt, _) -> evaluateScopedStmt environment stmt
 
-    let run (Program statementsList) =
-        let defaultEnvironment =
-            [ "print", DefaultEnvironment.tryPrint
-              "readInt", DefaultEnvironment.readInt ]
+    let runWithDefaultEnv defaultEnvironment (Program statementsList) =
 
         let createDefaultEnvironment defaultEnvironment =
             defaultEnvironment
-            |> List.map (fun (name, func) -> Callable.FromFunction(name |> Identifier.createIdentifier) func)
+            |> Map.toList
+            |> List.map (fun (name, func) -> Callable.FromFunction (name |> Identifier.create) func)
             |> List.map (fun callable -> (callable.Name, callable))
             |> Map.ofList
             |> Dictionary
@@ -110,3 +117,11 @@ module Runner =
         statementsList
         |> (Utils.traverseM (evaluateStmt environment))
         |> getLastResultOrVoid
+
+    let run program =
+        let defaultEnvironment =
+            [ "print", DefaultEnvironment.tryPrint
+              "readInt", DefaultEnvironment.readInt ]
+            |> Map.ofList
+
+        runWithDefaultEnv defaultEnvironment program

@@ -5,8 +5,8 @@ open FSharpPlus
 type ExpEvaluator = Expression -> Result<Value, RunError>
 
 module ExpEvaluator =
-
     open Value
+    
     let constEvaluator value = Result.Ok value
 
     let binaryOpEvaluator op (val1: Value) (val2: Value) =
@@ -25,12 +25,23 @@ module ExpEvaluator =
                 "Arithmetic error"
                 |> (Errors.createResult ErrorType.Other)
 
+        let evalLogicalExp op =
+            match op with
+            | And -> val1 .&& val2
+            | Or -> val1 .|| val2
+
+        let evalRelationalExp op =
+            match op with
+            | Equal -> val1 .== val2
+
         match op with
         | BinaryOp.ArithmeticOp op -> (evalArithmeticExp op)
+        | BinaryOp.LogicalOp op -> (evalLogicalExp op)
+        | BinaryOp.RelationalOp op -> (evalRelationalExp op)
 
     let unaryOpEvaluator op value =
         match op with
-        | Negate -> failwith "Not implemented"
+        | Neg -> failwith "not implemented"
 
     let rec tryEvaluate
         varUpdater

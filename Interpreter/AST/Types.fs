@@ -8,15 +8,27 @@ type VarDeclaration =
     { Name: Identifier
       Initializer: Expression }
 
+
 type ScopedStatement =
     | ExpressionStatement of Expression
     | VarDeclaration of VarDeclaration
     | BlockStatement of Block
+    | IfStatement of IfStatement
     | Empty
+
+and IfStatement =
+    { Condition: Expression
+      OnTrue: ScopedStatement
+      OnFalse: ScopedStatement }
 
 and Block =
     { Content: ScopedStatement list }
     static member Create content = { Content = content }
+
+    static member FromExpressions expressions =
+        expressions
+        |> (List.map ExpressionStatement)
+        |> Block.Create
 
 type Function =
     { Name: Identifier
@@ -41,5 +53,7 @@ type Callable =
 type Statement =
     | FunDeclaration of Function
     | ScopedStatement of ScopedStatement
+    static member FromExpression(exp: Expression) =
+        exp |> ExpressionStatement |> ScopedStatement
 
 type Program = Program of Statement list

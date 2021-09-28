@@ -43,3 +43,22 @@ type Expression =
 and FunCall =
     { Name: Identifier
       ActualParameters: Expression list }
+
+module Expression =
+    let var identifier =
+        identifier |> Identifier.create |> Var |> Mutable
+
+    let funCall identifier parameters =
+        { Name = identifier
+          ActualParameters = parameters }
+        |> FunCall
+
+    let floatConstant value = value |> FloatValue |> Constant
+    let intConstant value = value |> IntValue |> Constant
+    let assignment (identifier: Identifier) exp = (identifier, exp) |> Assignment
+
+    let binary operator leftOperand rightOperand =
+        {| BinaryOp = operator
+           LeftOperand = leftOperand
+           RightOperand = rightOperand |} |> Binary
+    let add = Add |> ArithmeticOp

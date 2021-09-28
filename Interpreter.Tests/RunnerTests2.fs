@@ -6,14 +6,15 @@ open FsCheck
 open FsCheck.Xunit
 open FSharpPlus
 open Interpreter.AST
+open Interpreter.AST
+
+let (.=.) left right =
+    left = right |@ sprintf "%A = %A" left right
 
 module Run =
-    let (.=.) left right =
-        left = right |@ sprintf "%A = %A" left right
-
     let idFuncProgram inputVal =
-        let varIdent = Identifier.createIdentifier "x"
-        let funIdent = Identifier.createIdentifier "id"
+        let varIdent = Identifier.create "x"
+        let funIdent = Identifier.create "id"
         // let inputVal = input |> IntValue
         let actualParam = inputVal |> Constant
 
@@ -75,11 +76,9 @@ module Run =
         input
         (len: PositiveInt)
         =
-        let varIdent =
-            Identifier.createIdentifier (paramName |> string)
+        let varIdent = Identifier.create (paramName |> string)
 
-        let funIdent =
-            Identifier.createIdentifier (funName |> string)
+        let funIdent = Identifier.create (funName |> string)
 
         let inputVal = input |> IntValue
         let actualParam = inputVal |> Constant
@@ -114,8 +113,7 @@ module Run =
         (repeatsCount: PositiveInt)
         =
 
-        let varIdent =
-            Identifier.createIdentifier (varName |> string)
+        let varIdent = Identifier.create (varName |> string)
 
         let vDecl =
             { Name = varIdent
@@ -139,8 +137,7 @@ module Run =
         (level: PositiveInt)
         =
 
-        let varIdent =
-            Identifier.createIdentifier (varName.Get)
+        let varIdent = Identifier.create (varName.Get)
 
         let vDecl =
             { Name = varIdent
@@ -173,8 +170,7 @@ module Run =
     [<Property>]
     let ``it is possible to access variable in the same scope`` (varName: NonEmptyString) varInit (level: PositiveInt) =
 
-        let varIdent =
-            Identifier.createIdentifier (varName.Get)
+        let varIdent = Identifier.create (varName.Get)
 
         let vDecl =
             { Name = varIdent
@@ -192,7 +188,7 @@ module Run =
         actual |> Option.ofResult |> Option.isSome
 
 
-    let outProgram program = 
+    let outProgram program =
         sprintf "\n%s" (program |> Printer.toStr)
 
     [<Property(Verbose = true)>]
@@ -202,15 +198,15 @@ module Run =
         (level: PositiveInt)
         =
 
-        let varIdent =
-            Identifier.createIdentifier (varName.Get)
+        let varIdent = Identifier.create (varName.Get)
 
         let vDecl =
             { Name = varIdent
               Initializer = varInit |> Constant }
             |> VarDeclaration
 
-        let varUsage = (varIdent |> Var |> Mutable |>  ExpressionStatement)
+        let varUsage =
+            (varIdent |> Var |> Mutable |> ExpressionStatement)
 
         let program =
             [ vDecl ] @ blockize (level.Get - 1) [ varUsage ]
@@ -220,31 +216,91 @@ module Run =
         let actual = Runner.run program
 
         // actual  .=. (varInit |> Result.Ok)
-        actual |> Option.ofResult |> Option.isSome       
+        actual |> Option.ofResult |> Option.isSome
 
-    // [<Property(Verbose = true)>]
-    // let ``assignment returns its left operand``
-    //     (varName: NonEmptyString)
-    //     varInit   
-    //     =
+    [<Property(Verbose = true)>]
+    let ``assignment returns its left operand``
+        (varName: NonEmptyString)
+        varInit
+        varAssignmentValue
+        (maxNestCount: PositiveInt)
+        =
 
-    //     let varIdent =
-    //         Identifier.createIdentifier (varName.Get)
+        let varIdent = Identifier.create (varName.Get)
 
-    //     let vDecl =
-    //         { Name = varIdent
-    //           Initializer = varInit |> Constant }
-    //         |> VarDeclaration
+        let vDecl =
+            { Name = varIdent
+              Initializer = Expression.intConstant varInit }
+            |> VarDeclaration
+            |> ScopedStatement
 
-    //     let varAssignment = (varIdent |> Var |> ExpressionStatement)
+        let rec varAssignment curNestCount maxNestCount =
+            if curNestCount = maxNestCount then
+                (Expression.intConstant varAssignmentValue)
+            else
+                Expression.assignment varIdent (varAssignment (curNestCount + 1) maxNestCount)
 
-    //     let program =
-    //         [ vDecl ] @ blockize (level.Get - 1) [ varUsage ]
-    //         |> List.map ScopedStatement
-    //         |> Program
+        let program =
+            [ vDecl
+              (varAssignment 0 maxNestCount.Get)
+              |> Statement.FromExpression ]
+            |> Program
 
-    //     let actual = Runner.run program
+        let actual = Runner.run program
 
-    //     // actual  .=. (varInit |> Result.Ok)
-    //     actual |> Option.ofResult |> Option.isSome       
-    
+        let expected =
+            varAssignmentValue |> IntValue |> Result.Ok
+
+        actual .=. expected
+
+module Programs =
+    [<Property>]
+    let ``addition fun works properly for integers `` (a) b (funName: NonEmptyString) =
+
+        let funName = funName.Get
+
+        let addFunDecl =
+            { Name = funName |> Identifier.create
+              Parameters =
+                  [ "a" |> Identifier.create
+                    "b" |> Identifier.create ]
+              Body =
+                  [ (Expression.binary Expression.add ("a" |> Expression.var) ("b" |> Expression.var)) ]
+                  |> Block.FromExpressions }
+            |> FunDeclaration
+
+        let funCall =
+            Expression.funCall
+                (funName |> Identifier.create)
+                [ a |> Expression.intConstant
+                  b |> Expression.intConstant ]
+            |> Statement.FromExpression
+
+        let program = [ addFunDecl; funCall ] |> Program
+
+        let actual = Runner.run program
+        let expected = (a + b) |> IntValue |> Result.Ok
+
+        actual .=. expected
+
+// [<Property>]
+// let ``fibonacci series works correctly`` (n:PositiveInt) =
+//     let rec fib n =
+//         match n with
+//         |   0 -> 1
+//         |   1 -> 1
+//         | _ -> fib (n - 1) (n - 2)
+
+
+//let fibFunDecl =
+//    { Name = "fib" |> Identifier
+//      Parameters = ["n" |> Identifier ]
+//      Body =
+//          [ varIdent |> Var |> Mutable |> ExpressionStatement ]
+//          |> Block.Create }
+
+//     let expected = fib (n.Get)
+// let program =
+//     [
+//         FunDeclaration.
+//     ]

@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="RunnerTests2.fs" />
-    <Compile Include="UtilsTests.fs" /> 
+    <Compile Include="UtilsTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FsCheck" Version="2.16.3" />
