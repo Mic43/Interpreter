@@ -21,7 +21,7 @@ module Run =
             { Name = funIdent
               Parameters = [ varIdent ]
               Body =
-                  [ varIdent |> Var |> ExpressionStatement ]
+                  [ varIdent |> Var |> Mutable |> ExpressionStatement ]
                   |> Block.Create }
 
         [ idFunDecl |> FunDeclaration
@@ -88,7 +88,7 @@ module Run =
             { Name = funIdent
               Parameters = [ varIdent ]
               Body =
-                  [ varIdent |> Var |> ExpressionStatement ]
+                  [ varIdent |> Var |> Mutable |> ExpressionStatement ]
                   |> Block.Create }
 
         let program =
@@ -183,7 +183,7 @@ module Run =
 
         let program =
             [ vDecl
-              (varIdent |> Var |> ExpressionStatement) ]
+              (varIdent |> Var |> Mutable |> ExpressionStatement) ]
             |> (blockize (level.Get - 1))
             |> List.map ScopedStatement
             |> Program
@@ -210,7 +210,7 @@ module Run =
               Initializer = varInit |> Constant }
             |> VarDeclaration
 
-        let varUsage = (varIdent |> Var |> ExpressionStatement)
+        let varUsage = (varIdent |> Var |> Mutable |>  ExpressionStatement)
 
         let program =
             [ vDecl ] @ blockize (level.Get - 1) [ varUsage ]
@@ -221,3 +221,30 @@ module Run =
 
         // actual  .=. (varInit |> Result.Ok)
         actual |> Option.ofResult |> Option.isSome       
+
+    // [<Property(Verbose = true)>]
+    // let ``assignment returns its left operand``
+    //     (varName: NonEmptyString)
+    //     varInit   
+    //     =
+
+    //     let varIdent =
+    //         Identifier.createIdentifier (varName.Get)
+
+    //     let vDecl =
+    //         { Name = varIdent
+    //           Initializer = varInit |> Constant }
+    //         |> VarDeclaration
+
+    //     let varAssignment = (varIdent |> Var |> ExpressionStatement)
+
+    //     let program =
+    //         [ vDecl ] @ blockize (level.Get - 1) [ varUsage ]
+    //         |> List.map ScopedStatement
+    //         |> Program
+
+    //     let actual = Runner.run program
+
+    //     // actual  .=. (varInit |> Result.Ok)
+    //     actual |> Option.ofResult |> Option.isSome       
+    

@@ -47,7 +47,9 @@ module ExpEvaluator =
 
         match expression with
         | Constant c -> constEvaluator c
-        | Var v -> varEvaluator v
+        | Mutable m ->
+            match m with
+            | Var v -> varEvaluator v
         | Assignment (ident, expr) ->
             monad' {
                 let! value = (tryEvaluateRec expr)

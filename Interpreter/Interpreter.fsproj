@@ -1,22 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
-    <Compile Include="AST\Utils.fs" />
-    <Compile Include="AST\Errors.fs" />    
+    <Compile Include="AST\Utils.fs" />   
+    <Compile Include="AST\Errors.fs" />
+    <Compile Include="AST\Value.fs" />
+    <Compile Include="AST\Identifier.fs" />
+    <Compile Include="AST\Expression.fs" />
     <Compile Include="AST\Types.fs" />
-    <Compile Include="AST\DefaultEnvironment.fs" />    
+    <Compile Include="AST\DefaultEnvironment.fs" />
     <Compile Include="AST\Environment.fs" />
     <Compile Include="AST\Printer.fs" />
     <Compile Include="AST\Evaluators.fs" />
     <Compile Include="AST\Runner.fs" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="FSharpPlus" Version="1.2.1" />
   </ItemGroup>
-
 </Project>

@@ -92,9 +92,11 @@ module Runner =
         | (ScopedStatement stmt, _) -> evaluateScopedStmt environment stmt
 
     let run (Program statementsList) =
-        let defaultEnvironment = [ "print", DefaultEnvironment.tryPrint ]
+        let defaultEnvironment =
+            [ "print", DefaultEnvironment.tryPrint
+              "readInt", DefaultEnvironment.readInt ]
 
-        let createDefaultEnvironment () =
+        let createDefaultEnvironment defaultEnvironment =
             defaultEnvironment
             |> List.map (fun (name, func) -> Callable.FromFunction(name |> Identifier.createIdentifier) func)
             |> List.map (fun callable -> (callable.Name, callable))
@@ -103,7 +105,7 @@ module Runner =
             |> Environment.CreateGlobal
 
         let environment =
-            Environment.create (createDefaultEnvironment ())
+            Environment.create (createDefaultEnvironment defaultEnvironment)
 
         statementsList
         |> (Utils.traverseM (evaluateStmt environment))

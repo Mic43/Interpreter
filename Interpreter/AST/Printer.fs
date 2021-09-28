@@ -8,7 +8,9 @@ module Printer =
         | Unary (_, _) -> failwith "Not Implemented"
         | Assignment (_, _) -> failwith "Not Implemented"
         | FunCall (_) -> failwith "Not Implemented"
-        | Var (ident) -> ident |> Identifier.toStr
+        | Mutable (me) ->
+            match me with
+            | Var ident -> ident |> Identifier.toStr
 
     let rec scopedStmtToStr (stmt: ScopedStatement) =
         match stmt with
