@@ -6,7 +6,7 @@ type ExpEvaluator = Expression -> Result<Value, RunError>
 
 module ExpEvaluator =
     open Value
-    
+
     let constEvaluator value = Result.Ok value
 
     let binaryOpEvaluator op (val1: Value) (val2: Value) =
@@ -33,6 +33,8 @@ module ExpEvaluator =
         let evalRelationalExp op =
             match op with
             | Equal -> val1 .== val2
+            | Greater -> val1 .> val2
+            | Less -> val1 .< val2
 
         match op with
         | BinaryOp.ArithmeticOp op -> (evalArithmeticExp op)
@@ -41,7 +43,7 @@ module ExpEvaluator =
 
     let unaryOpEvaluator op value =
         match op with
-        | Neg -> failwith "not implemented"
+        | Negate -> !value
 
     let rec tryEvaluate
         varUpdater
@@ -83,7 +85,7 @@ module ExpEvaluator =
         | Unary (op, exp) ->
             monad' {
                 let! value = tryEvaluateRec exp
-                return unaryOpEvaluator op value
+                return! unaryOpEvaluator op value
             }
         | FunCall fc ->
             let parametersValues =

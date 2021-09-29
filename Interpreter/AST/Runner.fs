@@ -25,11 +25,11 @@ module Runner =
             |> traverse (evaluateScopedStmt environment)
             |> getLastResultOrVoid
 
-        let evaluateFunction funIdentifier (actualParametersValues: Value list) =
+        let evaluateFunctionCall funIdentifier (actualParametersValues: Value list) =
             let funcs =
-                match environment.CurrentEnvironment.Kind with
+                match environment.Global.Kind with
                 | Global g -> g.Functions
-                | _ -> invalidArg "environment" "functions cannot be defined in local scope"
+                | _ -> invalidOp "default environment must be of global kind"
 
             monad' {
                 let! foundFunc =
@@ -59,7 +59,7 @@ module Runner =
                 ExpEvaluator.constEvaluator
                 ExpEvaluator.binaryOpEvaluator
                 ExpEvaluator.unaryOpEvaluator
-                evaluateFunction
+                evaluateFunctionCall
                 exp
 
         match exp with

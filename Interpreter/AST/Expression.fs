@@ -60,5 +60,20 @@ module Expression =
     let binary operator leftOperand rightOperand =
         {| BinaryOp = operator
            LeftOperand = leftOperand
-           RightOperand = rightOperand |} |> Binary
-    let add = Add |> ArithmeticOp
+           RightOperand = rightOperand |}
+        |> Binary
+
+    let add leftOperand rightOperand =
+        binary (Add |> ArithmeticOp) leftOperand rightOperand
+
+    let sub leftOperand rightOperand =
+        binary (Sub |> ArithmeticOp) leftOperand rightOperand
+
+    let equals leftOperand rightOperand =
+        binary (Equal |> RelationalOp) leftOperand rightOperand
+
+    let or_ leftOperand rightOperand =
+        binary (Or |> LogicalOp) leftOperand rightOperand
+
+    let and_ leftOperand rightOperand =
+        binary (And |> LogicalOp) leftOperand rightOperand

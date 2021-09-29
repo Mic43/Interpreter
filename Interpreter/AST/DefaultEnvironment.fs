@@ -2,7 +2,6 @@ namespace Interpreter.AST
 
 open System
 
-
 module DefaultEnvironment =
     let tryPrint (parametersList: Value list) =
         if (parametersList.Length <> 1) then

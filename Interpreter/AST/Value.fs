@@ -30,31 +30,42 @@ module Value =
         | VoidValue _ -> "null"
         | BoolValue (b) -> sprintf "%b" b
 
-    let private compute opFloat opInt v1 v2 =
+    let private compute resultConvFloat resultConvInt opFloat opInt v1 v2 =
         match (v1, v2) with
-        | (IntValue v1, IntValue v2) -> (opInt v1 v2) |> IntValue |> Result.Ok
+        | (IntValue v1, IntValue v2) -> (opInt v1 v2) |> resultConvInt |> Result.Ok
         | (VoidValue _, _)
         | (_, VoidValue _) ->
             "cannot convert void to float"
             |> (Errors.createResult Other)
         | (v1, v2) ->
             (opFloat (v1 |> toFloat) (v2 |> toFloat))
-            |> FloatValue
+            |> resultConvFloat
             |> Result.Ok
 
-    let private computeBool operatorFun (v1: Value) (v2: Value) =
+    let private computeArithmetic opFloat opInt v1 v2 =
+        compute FloatValue IntValue opFloat opInt v1 v2
+
+    let private computeRelational opFloat opInt v1 v2 =
+        compute BoolValue BoolValue opFloat opInt v1 v2
+
+    let private computeLogical operatorFun (v1: Value) (v2: Value) =
         (operatorFun (v1.ToBool()) (v2.ToBool()))
-        |> BoolValue |> Result.Ok
+        |> BoolValue
+        |> Result.Ok
 
-    let (+) v1 v2 = compute (+) (+) v1 v2
-    let (-) v1 v2 = compute (-) (-) v1 v2
-    let (*) v1 v2 = compute (*) (*) v1 v2
-    let (/) v1 v2 = compute (/) (/) v1 v2
+    let (+) v1 v2 = computeArithmetic (+) (+) v1 v2
+    let (-) v1 v2 = computeArithmetic (-) (-) v1 v2
+    let (*) v1 v2 = computeArithmetic (*) (*) v1 v2
+    let (/) v1 v2 = computeArithmetic (/) (/) v1 v2
 
-    let (.&&) v1 v2 = computeBool (&&) v1 v2
-    let (.||) v1 v2 = computeBool (||) v1 v2
-    let (.==) v1 v2 = computeBool (=) v1 v2
-    let (.!=) v1 v2 = computeBool (<>) v1 v2
+    let (.&&) v1 v2 = computeLogical (&&) v1 v2
+    let (.||) v1 v2 = computeLogical (||) v1 v2
+   
+    let (.==) v1 v2 = computeRelational (=) (=) v1 v2
+    let (!) (v: Value) = not (v.ToBool()) |> BoolValue |> Ok
+    let (.!=) v1 v2 = (v1 .== v2) |> Result.map (!)
+    let (.>) v1 v2 = computeRelational (>) (>) v1 v2
+    let (.<) v1 v2 = computeRelational (<) (<) v1 v2
 
     let Void = () |> VoidValue
     let createVoid () = Void

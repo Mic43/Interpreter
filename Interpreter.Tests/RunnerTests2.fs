@@ -11,6 +11,9 @@ open Interpreter.AST
 let (.=.) left right =
     left = right |@ sprintf "%A = %A" left right
 
+let outProgram program =
+    sprintf "\n%s" (program |> Printer.toStr)
+
 module Run =
     let idFuncProgram inputVal =
         let varIdent = Identifier.create "x"
@@ -188,8 +191,7 @@ module Run =
         actual |> Option.ofResult |> Option.isSome
 
 
-    let outProgram program =
-        sprintf "\n%s" (program |> Printer.toStr)
+
 
     [<Property(Verbose = true)>]
     let ``it is possible to access variable from ancestor scope``
@@ -254,7 +256,7 @@ module Run =
         actual .=. expected
 
 module Programs =
-    [<Property>]
+    [<Property(Replay = "1877725774, 296945321")>]
     let ``addition fun works properly for integers `` (a) b (funName: NonEmptyString) =
 
         let funName = funName.Get
@@ -265,7 +267,7 @@ module Programs =
                   [ "a" |> Identifier.create
                     "b" |> Identifier.create ]
               Body =
-                  [ (Expression.binary Expression.add ("a" |> Expression.var) ("b" |> Expression.var)) ]
+                  [ Expression.add ("a" |> Expression.var) ("b" |> Expression.var) ]
                   |> Block.FromExpressions }
             |> FunDeclaration
 
@@ -282,25 +284,57 @@ module Programs =
         let expected = (a + b) |> IntValue |> Result.Ok
 
         actual .=. expected
+    
 
-// [<Property>]
-// let ``fibonacci series works correctly`` (n:PositiveInt) =
-//     let rec fib n =
-//         match n with
-//         |   0 -> 1
-//         |   1 -> 1
-//         | _ -> fib (n - 1) (n - 2)
+    let fibParams:obj[] seq = seq {        
+        yield [|0|]
+        yield [|1|]
+        yield [|2|]
+        yield [|3|]
+        yield [|4|]
+        yield [|5|]
+        yield [|6|] 
+        yield [|7|]
+    }
+    [<Theory;MemberData("fibParams")>]    
+    let ``fibonacci series function works correctly`` (n: int) =
+        let rec fib n =
+            match n with
+            | 0 -> 1
+            | 1 -> 1
+            | _ -> fib (n - 1) + fib (n - 2)
 
+        let varExp = Expression.var "n"
+        let zeroConst = Expression.intConstant 0
+        let oneConst = Expression.intConstant 1
+        let twoConst = Expression.intConstant 2
 
-//let fibFunDecl =
-//    { Name = "fib" |> Identifier
-//      Parameters = ["n" |> Identifier ]
-//      Body =
-//          [ varIdent |> Var |> Mutable |> ExpressionStatement ]
-//          |> Block.Create }
+        let funName = "fib" |> Identifier.create
 
-//     let expected = fib (n.Get)
-// let program =
-//     [
-//         FunDeclaration.
-//     ]
+        let fibDecl =
+            { Name = funName
+              Parameters = [ "n" |> Identifier.create ]
+              Body =
+                  [ { Condition =
+                          (Expression.equals varExp zeroConst)
+                          |> Expression.or_ (Expression.equals varExp oneConst)
+                      OnTrue = oneConst |> ExpressionStatement
+                      OnFalse =
+                          (Expression.funCall funName [ (Expression.sub varExp oneConst) ])
+                          |> Expression.add (Expression.funCall funName [ (Expression.sub varExp twoConst) ])
+                          |> ExpressionStatement }
+                    |> IfStatement ]
+                  |> Block.Create }
+            |> FunDeclaration
+
+        let program =
+            [ fibDecl
+              (Expression.funCall funName [ Expression.intConstant n ])
+              |> Statement.FromExpression ]
+            |> Program
+
+        let expected = fib (n) |> IntValue |> Result.Ok
+        let actual = Runner.run program
+
+        //actual .=. expected |@ (outProgram program)
+        Assert.Equal(expected, actual)
