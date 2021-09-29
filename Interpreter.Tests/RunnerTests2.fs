@@ -14,63 +14,42 @@ let (.=.) left right =
 let outProgram program =
     sprintf "\n%s" (program |> Printer.toStr)
 
+let idFuncProgram inputVal =
+    let varIdent = Identifier.create "x"
+    let funIdent = Identifier.create "id"
+    // let inputVal = input |> IntValue
+    let actualParam = inputVal |> Constant
+
+    let idFunDecl =
+        { Name = funIdent
+          Parameters = [ varIdent ]
+          Body =
+              [ varIdent |> Var |> Mutable |> ExpressionStatement ]
+              |> Block.Create }
+
+    [ idFunDecl |> FunDeclaration
+      { Name = funIdent
+        ActualParameters = [ actualParam ] }
+      |> FunCall
+      |> ExpressionStatement
+      |> ScopedStatement ]
+    |> Program
+
+let blockize maxLevel statements =
+    let rec blockizeRec maxLevel curLevel statements =
+
+        if curLevel = maxLevel then
+            statements
+        else
+            statements
+            |> Block.Create
+            |> BlockStatement
+            |> List.singleton
+            |> (blockizeRec maxLevel (curLevel + 1))
+
+    blockizeRec maxLevel 0 statements
+
 module Run =
-    let idFuncProgram inputVal =
-        let varIdent = Identifier.create "x"
-        let funIdent = Identifier.create "id"
-        // let inputVal = input |> IntValue
-        let actualParam = inputVal |> Constant
-
-        let idFunDecl =
-            { Name = funIdent
-              Parameters = [ varIdent ]
-              Body =
-                  [ varIdent |> Var |> Mutable |> ExpressionStatement ]
-                  |> Block.Create }
-
-        [ idFunDecl |> FunDeclaration
-          { Name = funIdent
-            ActualParameters = [ actualParam ] }
-          |> FunCall
-          |> ExpressionStatement
-          |> ScopedStatement ]
-        |> Program
-
-    let blockize maxLevel statements =
-        let rec blockizeRec maxLevel curLevel statements =
-
-            if curLevel = maxLevel then
-                statements
-            else
-                statements
-                |> Block.Create
-                |> BlockStatement
-                |> List.singleton
-                |> (blockizeRec maxLevel (curLevel + 1))
-
-        blockizeRec maxLevel 0 statements
-
-    [<Property>]
-    let ``identity function returns input when called with int argument`` (input: int) =
-        let inputVal = input |> IntValue
-
-        //let sut = new Runner()
-
-        let actual = Runner.run (idFuncProgram inputVal)
-
-        let expected = inputVal |> Ok
-
-        actual .=. expected
-
-    [<Property>]
-    let ``identity function returns input when called with float argument`` (input: NormalFloat) =
-        let inputVal = input |> float |> FloatValue
-
-        let actual = Runner.run (idFuncProgram inputVal)
-
-        let expected = inputVal |> Result.Ok
-
-        actual .=. expected
 
     [<Property>]
     let ``There can be only one function with specific name``
@@ -190,9 +169,6 @@ module Run =
         let actual = Runner.run program
         actual |> Option.ofResult |> Option.isSome
 
-
-
-
     [<Property(Verbose = true)>]
     let ``it is possible to access variable from ancestor scope``
         (varName: NonEmptyString)
@@ -255,8 +231,59 @@ module Run =
 
         actual .=. expected
 
+    [<Property>]
+    let ``increment variable in while loop works correctly`` (n:PositiveInt) =
+
+        let init = 0
+        let iVar = "i" |> Identifier.create
+
+        let vDecl =
+            { Name = iVar
+              Initializer = Expression.intConstant init }
+            |> VarDeclaration
+
+        let whileStmt =
+            { While.Condition = Expression.less (Expression.var "i") (Expression.intConstant n.Get)
+              Body =
+                  (Expression.assignment iVar (Expression.add (Expression.var "i") (Expression.intConstant 1)))
+                  |> ExpressionStatement } |> WhileStatement
+
+        let program =
+            [ vDecl
+              whileStmt
+              (Expression.var "i") |> ExpressionStatement
+              ] 
+              |> List.map ScopedStatement |> Program
+    
+        let expected = n.Get |> IntValue |>  Result.Ok
+        let actual = Runner.run program
+  
+        expected .=. actual
 module Programs =
-    [<Property(Replay = "1877725774, 296945321")>]
+
+    [<Property>]
+    let ``identity function returns input when called with int argument`` (input: int) =
+        let inputVal = input |> IntValue
+
+        //let sut = new Runner()
+
+        let actual = Runner.run (idFuncProgram inputVal)
+
+        let expected = inputVal |> Ok
+
+        actual .=. expected
+
+    [<Property>]
+    let ``identity function returns input when called with float argument`` (input: NormalFloat) =
+        let inputVal = input |> float |> FloatValue
+
+        let actual = Runner.run (idFuncProgram inputVal)
+
+        let expected = inputVal |> Result.Ok
+
+        actual .=. expected
+
+    [<Property>] //Replay = "1877725774, 296945321"
     let ``addition fun works properly for integers `` (a) b (funName: NonEmptyString) =
 
         let funName = funName.Get
@@ -284,19 +311,20 @@ module Programs =
         let expected = (a + b) |> IntValue |> Result.Ok
 
         actual .=. expected
-    
 
-    let fibParams:obj[] seq = seq {        
-        yield [|0|]
-        yield [|1|]
-        yield [|2|]
-        yield [|3|]
-        yield [|4|]
-        yield [|5|]
-        yield [|6|] 
-        yield [|7|]
-    }
-    [<Theory;MemberData("fibParams")>]    
+    let fibParams: obj [] seq =
+        seq {
+            yield [| 0 |]
+            yield [| 1 |]
+            yield [| 2 |]
+            yield [| 3 |]
+            yield [| 4 |]
+            yield [| 5 |]
+            yield [| 6 |]
+            yield [| 7 |]
+        }
+
+    [<Theory; MemberData("fibParams")>]
     let ``fibonacci series function works correctly`` (n: int) =
         let rec fib n =
             match n with
@@ -336,5 +364,4 @@ module Programs =
         let expected = fib (n) |> IntValue |> Result.Ok
         let actual = Runner.run program
 
-        //actual .=. expected |@ (outProgram program)
         Assert.Equal(expected, actual)

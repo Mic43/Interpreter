@@ -62,6 +62,7 @@ module Printer =
                 (is.Condition |> expressionToStr)
                 (is.OnTrue |> scopedStmtToStr)
                 (is.OnFalse |> scopedStmtToStr)
+        | WhileStatement ws -> sprintf "while %s\n\t%s" (ws.Condition |> expressionToStr) (ws.Body |> scopedStmtToStr)
 
     let rec stmtToStr (stmt: Statement) =
         match stmt with

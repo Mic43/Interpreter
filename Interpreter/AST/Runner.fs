@@ -86,11 +86,25 @@ module Runner =
             monad' {
                 let! condRes = ifs.Condition |> evaluateExpression
 
-                if (condRes |> Value.toBool) = true then
+                if (condRes |> Value.toBool) then
                     return! (ifs.OnTrue |> evaluateScopedStmtRec)
                 else
                     return! (ifs.OnFalse |> evaluateScopedStmtRec)
             }
+        | WhileStatement (ws) ->
+            let rec loop () : Result<Value, RunError> =
+                monad' {
+                    let! condVal = ws.Condition |> evaluateExpression
+
+                    if (condVal |> Value.toBool) then
+                        ws.Body |> evaluateScopedStmtRec |> ignore
+                        return! loop ()
+                    else
+                        return Value.Void
+                }
+
+            loop ()
+
 
     let private evaluateStmt (environment: ExecutionEnvironment) statement =
         match (statement, environment.IsCurrentGlobal) with
@@ -105,8 +119,10 @@ module Runner =
         let createDefaultEnvironment defaultEnvironment =
             defaultEnvironment
             |> Map.toList
-            |> List.map (fun (name, func) -> Callable.FromFunction (name |> Identifier.create) func)
-            |> List.map (fun callable -> (callable.Name, callable))
+            |> List.map (
+                (fun (name, func) -> Callable.FromFunction(name |> Identifier.create) func)
+                >> fun callable -> (callable.Name, callable)
+            )
             |> Map.ofList
             |> Dictionary
             |> Environment.CreateGlobal

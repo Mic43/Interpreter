@@ -60,9 +60,11 @@ module Value =
 
     let (.&&) v1 v2 = computeLogical (&&) v1 v2
     let (.||) v1 v2 = computeLogical (||) v1 v2
-   
-    let (.==) v1 v2 = computeRelational (=) (=) v1 v2
-    let (!) (v: Value) = not (v.ToBool()) |> BoolValue |> Ok
+
+    let (~-) (v: Value) = ((-1) |> IntValue) * v
+    let (!) (v: Value) = not (v.ToBool()) |> BoolValue |> Result.Ok
+
+    let (.==) v1 v2 = computeRelational (=) (=) v1 v2    
     let (.!=) v1 v2 = (v1 .== v2) |> Result.map (!)
     let (.>) v1 v2 = computeRelational (>) (>) v1 v2
     let (.<) v1 v2 = computeRelational (<) (<) v1 v2

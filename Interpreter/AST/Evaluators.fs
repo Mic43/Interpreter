@@ -44,6 +44,7 @@ module ExpEvaluator =
     let unaryOpEvaluator op value =
         match op with
         | Negate -> !value
+        | Minus -> -(value)
 
     let rec tryEvaluate
         varUpdater

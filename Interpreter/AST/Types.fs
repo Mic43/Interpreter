@@ -3,24 +3,36 @@
 open System
 open FSharpPlus
 
-
 type VarDeclaration =
     { Name: Identifier
       Initializer: Expression }
 
+type ForInitializer =
+    | Expression
+    | VarDeclaration
 
 type ScopedStatement =
     | ExpressionStatement of Expression
     | VarDeclaration of VarDeclaration
     | BlockStatement of Block
-    | IfStatement of IfStatement
+    | IfStatement of If
+    | WhileStatement of While
+    | ForStatement of For
     | Empty
 
-and IfStatement =
+and While =
+    { Condition: Expression
+      Body: ScopedStatement }
+
+and For =
+    { Initializer: ForInitializer
+      Condition: Expression
+      Increment: Expression }
+
+and If =
     { Condition: Expression
       OnTrue: ScopedStatement
       OnFalse: ScopedStatement }
-
 and Block =
     { Content: ScopedStatement list }
     static member Create content = { Content = content }

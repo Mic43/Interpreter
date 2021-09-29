@@ -77,3 +77,6 @@ module Expression =
 
     let and_ leftOperand rightOperand =
         binary (And |> LogicalOp) leftOperand rightOperand
+
+    let less leftOperand rightOperand =
+        binary (Less |> RelationalOp) leftOperand rightOperand
