@@ -5,20 +5,19 @@ open FSharpPlus
 
 type VarDeclaration =
     { Name: Identifier
-      Initializer: Expression }
+      InitExpression: Expression }
 
 type ForInitializer =
-    | Expression
-    | VarDeclaration
+    | ExpressionInit of Expression
+    | VarDeclarationInit of VarDeclaration
 
 type ScopedStatement =
     | ExpressionStatement of Expression
-    | VarDeclaration of VarDeclaration
+    | VarDeclarationStatement of VarDeclaration
     | BlockStatement of Block
     | IfStatement of If
     | WhileStatement of While
-    | ForStatement of For
-    | Empty
+    | ForStatement of For   
 
 and While =
     { Condition: Expression
@@ -27,12 +26,14 @@ and While =
 and For =
     { Initializer: ForInitializer
       Condition: Expression
-      Increment: Expression }
+      Increment: Expression
+      Body: ScopedStatement }
 
 and If =
     { Condition: Expression
       OnTrue: ScopedStatement
       OnFalse: ScopedStatement }
+
 and Block =
     { Content: ScopedStatement list }
     static member Create content = { Content = content }

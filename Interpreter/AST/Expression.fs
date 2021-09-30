@@ -39,7 +39,7 @@ type Expression =
     | FunCall of FunCall
     | Mutable of MutableExpression
     | Constant of Value
-
+    
 and FunCall =
     { Name: Identifier
       ActualParameters: Expression list }
@@ -55,6 +55,8 @@ module Expression =
 
     let floatConstant value = value |> FloatValue |> Constant
     let intConstant value = value |> IntValue |> Constant
+    let voidConstant()  = Value.Void |> Constant
+
     let assignment (identifier: Identifier) exp = (identifier, exp) |> Assignment
 
     let binary operator leftOperand rightOperand =

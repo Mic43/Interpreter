@@ -99,10 +99,10 @@ module Run =
 
         let vDecl =
             { Name = varIdent
-              Initializer = varInit |> Constant }
+              InitExpression = varInit |> Constant }
 
         let program =
-            (fun _ -> vDecl |> VarDeclaration |> ScopedStatement)
+            (fun _ -> vDecl |> VarDeclarationStatement |> ScopedStatement)
             |> List.init (repeatsCount.Get + 1)
             |> Program
 
@@ -123,8 +123,8 @@ module Run =
 
         let vDecl =
             { Name = varIdent
-              Initializer = varInit |> Constant }
-            |> VarDeclaration
+              InitExpression = varInit |> Constant }
+            |> VarDeclarationStatement
 
         let blockize maxLevel statement =
             let rec blockizeRec maxLevel curLevel statement =
@@ -156,8 +156,8 @@ module Run =
 
         let vDecl =
             { Name = varIdent
-              Initializer = varInit |> Constant }
-            |> VarDeclaration
+              InitExpression = varInit |> Constant }
+            |> VarDeclarationStatement
 
         let program =
             [ vDecl
@@ -180,8 +180,8 @@ module Run =
 
         let vDecl =
             { Name = varIdent
-              Initializer = varInit |> Constant }
-            |> VarDeclaration
+              InitExpression = varInit |> Constant }
+            |> VarDeclarationStatement
 
         let varUsage =
             (varIdent |> Var |> Mutable |> ExpressionStatement)
@@ -208,8 +208,8 @@ module Run =
 
         let vDecl =
             { Name = varIdent
-              Initializer = Expression.intConstant varInit }
-            |> VarDeclaration
+              InitExpression = Expression.intConstant varInit }
+            |> VarDeclarationStatement
             |> ScopedStatement
 
         let rec varAssignment curNestCount maxNestCount =
@@ -239,8 +239,8 @@ module Run =
 
         let vDecl =
             { Name = iVar
-              Initializer = Expression.intConstant init }
-            |> VarDeclaration
+              InitExpression = Expression.intConstant init }
+            |> VarDeclarationStatement
 
         let whileStmt =
             { While.Condition = Expression.less (Expression.var "i") (Expression.intConstant n.Get)

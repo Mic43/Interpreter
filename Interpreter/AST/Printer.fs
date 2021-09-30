@@ -40,14 +40,13 @@ module Printer =
             | Var ident -> ident |> Identifier.toStr
 
     let rec scopedStmtToStr (stmt: ScopedStatement) =
-        match stmt with
-        | Empty -> ""
+        match stmt with       
         | ExpressionStatement e -> expressionToStr e
-        | VarDeclaration (vd) ->
+        | VarDeclarationStatement (vd) ->
             sprintf
                 "%s = %s"
                 (vd.Name |> Identifier.toStr)
-                (vd.Initializer
+                (vd.InitExpression
                  |> ExpressionStatement
                  |> scopedStmtToStr)
         | BlockStatement block ->

@@ -104,3 +104,4 @@ module Utils =
 
     let traverseMTail<'T, 'U, 'Error> (mapper: 'T -> Result<'U, 'Error>) (lst: 'T list) : Result<'U list, 'Error> =
         traverseMTailUntil (fun _ -> false) mapper lst
+    

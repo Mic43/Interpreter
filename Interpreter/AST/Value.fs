@@ -20,6 +20,14 @@ type Value =
         | _ -> invalidArg "val" "cannot convert void to float"
 
 module Value =
+    let Void = () |> VoidValue
+    let createVoid () = Void
+
+    let ignoreResuls (res: Result<Value list, RunError>) = res |> Result.map (fun _ -> Void)
+    let getLastResultOrVoid (res: Result<Value list, RunError>) =
+        res
+        |> Result.map (fun vl -> vl |> (List.tryLast >> (Option.defaultValue Void)))
+
     let toFloat (v: Value) = v.ToFloat()
     let toBool (v: Value) = v.ToBool()
 
@@ -62,12 +70,11 @@ module Value =
     let (.||) v1 v2 = computeLogical (||) v1 v2
 
     let (~-) (v: Value) = ((-1) |> IntValue) * v
-    let (!) (v: Value) = not (v.ToBool()) |> BoolValue |> Result.Ok
 
-    let (.==) v1 v2 = computeRelational (=) (=) v1 v2    
+    let (!) (v: Value) =
+        not (v.ToBool()) |> BoolValue |> Result.Ok
+
+    let (.==) v1 v2 = computeRelational (=) (=) v1 v2
     let (.!=) v1 v2 = (v1 .== v2) |> Result.map (!)
     let (.>) v1 v2 = computeRelational (>) (>) v1 v2
     let (.<) v1 v2 = computeRelational (<) (<) v1 v2
-
-    let Void = () |> VoidValue
-    let createVoid () = Void
