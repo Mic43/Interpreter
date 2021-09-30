@@ -18,7 +18,7 @@ type ScopedStatement =
     | IfStatement of If
     | WhileStatement of While
     | ForStatement of For   
-
+    | Empty 
 and While =
     { Condition: Expression
       Body: ScopedStatement }

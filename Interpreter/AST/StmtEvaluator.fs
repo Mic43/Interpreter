@@ -2,7 +2,7 @@ namespace Interpreter.AST
 
 open FSharpPlus
 
-module StmtEvaluator =   
+module StmtEvaluator =
     let rec private evaluateScopedStmt
         (environment: ExecutionEnvironment)
         (exp: ScopedStatement)
@@ -114,6 +114,7 @@ module StmtEvaluator =
 
                 return! (loop fs.Body fs.Condition fs.Increment)
             }
+        | Empty -> Value.Void |> Ok
 
     let evaluate (environment: ExecutionEnvironment) statement =
         match (statement, environment.IsCurrentGlobal) with

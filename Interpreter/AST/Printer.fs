@@ -39,8 +39,14 @@ module Printer =
             match me with
             | Var ident -> ident |> Identifier.toStr
 
+
     let rec scopedStmtToStr (stmt: ScopedStatement) =
-        match stmt with       
+        let initializerToStr initializer =
+            match initializer with
+            | ExpressionInit ei -> ei |> expressionToStr
+            | VarDeclarationInit (vd) -> vd |> VarDeclarationStatement |> scopedStmtToStr
+
+        match stmt with
         | ExpressionStatement e -> expressionToStr e
         | VarDeclarationStatement (vd) ->
             sprintf
@@ -62,6 +68,14 @@ module Printer =
                 (is.OnTrue |> scopedStmtToStr)
                 (is.OnFalse |> scopedStmtToStr)
         | WhileStatement ws -> sprintf "while %s\n\t%s" (ws.Condition |> expressionToStr) (ws.Body |> scopedStmtToStr)
+        | ForStatement fs ->
+            sprintf
+                "for %s %s %s\n\t%s"
+                (fs.Initializer |> initializerToStr)
+                (fs.Condition |> expressionToStr)
+                (fs.Increment |> expressionToStr)
+                (fs.Body |> scopedStmtToStr)
+        | Empty -> ";"
 
     let rec stmtToStr (stmt: Statement) =
         match stmt with

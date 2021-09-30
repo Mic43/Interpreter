@@ -8,7 +8,7 @@
     <Compile Include="AST\Value.fs" />
     <Compile Include="AST\Identifier.fs" />
     <Compile Include="AST\Expression.fs" />
-    <Compile Include="AST\Types.fs" />
+    <Compile Include="AST\Statement.fs" />
     <Compile Include="AST\DefaultEnvironment.fs" />
     <Compile Include="AST\Environment.fs" />
     <Compile Include="AST\Printer.fs" />
