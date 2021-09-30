@@ -7,13 +7,19 @@ module StmtEvaluator =
         (environment: ExecutionEnvironment)
         (exp: ScopedStatement)
         : Result<Value, RunError> =
+
         let evaluateScopedStmtRec = evaluateScopedStmt environment
 
         let evaluateBlock block =
-            block.Content
-            |> traverse (evaluateScopedStmt environment)
-            |> Value.getLastResultOrVoid
+            Environment.nestNewEmptyEnvironment environment
 
+            block.Content
+                    |> traverse (evaluateScopedStmt environment)
+                    |> Value.getLastResultOrVoid
+                    |> Result.bind (fun res ->                     
+                            environment |> Environment.returnToParent
+                            res |> Ok)               
+            
         let evaluateFunctionCall funIdentifier (actualParametersValues: Value list) =
             let funcs =
                 match environment.Global.Kind with
@@ -34,7 +40,9 @@ module StmtEvaluator =
                         |> Result.mapError (fun e -> Errors.create ErrorType.Evaluation "wrong parameters count")
 
                     Environment.nestNewEnvironment environment (paramsWithValues |> Map.ofSeq)
-                    let! res = evaluateBlock func.Body
+
+                    let! res = func.Body |> evaluateBlock
+
                     environment |> Environment.returnToParent
 
                     return res
@@ -73,15 +81,8 @@ module StmtEvaluator =
             }
 
         match exp with
-        | ExpressionStatement exp -> evaluateExpression exp
-        | BlockStatement block ->
-            environment |> Environment.nestNewEmptyEnvironment
-
-            monad' {
-                let! res = evaluateBlock block
-                environment |> Environment.returnToParent
-                return res
-            }
+        | ExpressionStatement exp -> exp |> evaluateExpression
+        | BlockStatement block -> block |> evaluateBlock
         | VarDeclarationStatement vd -> vd |> evaluateVarDeclaration
         | IfStatement (ifs) ->
             monad' {
