@@ -12,6 +12,8 @@ module Statement =
     let pIdentList =
         sepBy (spaces >>. pIdentifier .>> spaces) pListSeparator
 
+    let pExpr = pExpr ()
+
     let pFunDecl pBlock =
         spaces
         >>. funKeyword
@@ -25,8 +27,6 @@ module Statement =
                       Body = body
                       Parameters = parametrs })
 
-    let pExpr = pExpr()
-    
     let pVarDecl =
         pipe2
             (varKeyword >>. spaces1 >>. pIdentifier
@@ -38,9 +38,26 @@ module Statement =
                 { VarDeclaration.Name = ident
                   InitExpression = exp })
 
+    let pIfStmt pScopedStmt =
+        pipe3
+            (ifKeyword
+             >>. spaces
+             >>. pOpenBracket
+             >>. spaces
+             >>. pExpr
+             .>> spaces
+             .>> pCloseBracket)
+            (pScopedStmt .>> elseKeyword)
+            (pScopedStmt)
+            (fun cond trueStmt falseStmt ->
+                { If.Condition = cond
+                  OnTrue = trueStmt
+                  OnFalse = falseStmt })
+
     let pScopedStatement block blockImpl =
         //let block, blockImpl =
         //    createParserForwardedToRef<Block, unit> ()
+        let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()
 
         let pVarStmt = pVarDecl |>> VarDeclarationStatement
 
@@ -48,11 +65,11 @@ module Statement =
             pExpr .>> spaces .>> pSemicolon
             |>> ExpressionStatement
 
-        let blockStmt = block |>> BlockStatement
-
+        let blockStmt = block |>> BlockStatement        
 
         let scopedStatement =
-            spaces >>. ( pVarStmt <|> pExprStmt <|> blockStmt)
+            spaces
+            >>. (pVarStmt <|> (ifStmt |>> IfStatement) <|> pExprStmt <|> blockStmt)
             .>> spaces
 
         do
@@ -64,6 +81,8 @@ module Statement =
                .>> pCloseCurlyBracket
                |>> Block.Create
                <!> "block"
+
+        do ifStmtImp := (pIfStmt scopedStatement)
 
         scopedStatement
 

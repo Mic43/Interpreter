@@ -14,12 +14,13 @@ module StmtEvaluator =
             Environment.nestNewEmptyEnvironment environment
 
             block.Content
-                    |> Utils.traverseM (evaluateScopedStmt environment)
-                    |> Value.getLastResultOrVoid
-                    |> Result.bind (fun res ->                     
-                            environment |> Environment.returnToParent
-                            res |> Ok)               
-            
+            |> Utils.traverseM (evaluateScopedStmt environment)
+            |> Value.getLastResultOrVoid
+            |> Result.bind
+                (fun res ->
+                    environment |> Environment.returnToParent
+                    res |> Ok)
+
         let evaluateFunctionCall funIdentifier (actualParametersValues: Value list) =
             let funcs =
                 match environment.Global.Kind with
@@ -28,9 +29,14 @@ module StmtEvaluator =
 
             monad' {
                 let! foundFunc =
-                    (funcs.ContainsKey funIdentifier, funcs.[funIdentifier])
+                    (funcs.TryGetValue funIdentifier)
                     |> Option.ofPair
-                    |> Option.toResultWith (Errors.create ErrorType.Other "function not defined")
+                    |> Option.toResultWith (
+                        Errors.create
+                            ErrorType.Other
+                            (funIdentifier.ToStr()
+                             |> sprintf "function not defined: %s")
+                    )
 
                 match foundFunc with
                 | Function func ->

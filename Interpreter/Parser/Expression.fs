@@ -16,27 +16,43 @@ module Common =
 
 module Reserved =
 
-    let pOpenBracket: Parser<char, unit> = pchar '('
-    let pCloseBracket: Parser<char, unit> = pchar ')'
-    let pOpenCurlyBracket: Parser<char, unit> = pchar '{'
-    let pCloseCurlyBracket: Parser<char, unit> = pchar '}'
-    let varKeyword: Parser<string, unit> = pstring "var"
-    let funKeyword: Parser<string, unit> = pstring "fun"
-    let initVarOpKeyWord: Parser<char, unit> = pchar '='
-    let pSemicolon: Parser<char, unit> = pchar ';'
+    type ParserU<'T> = Parser<'T, unit>
 
+    let pOpenBracket: ParserU<char> = pchar '('
+    let pCloseBracket: ParserU<char> = pchar ')'
+    let pOpenCurlyBracket: ParserU<char> = pchar '{'
+    let pCloseCurlyBracket: ParserU<char> = pchar '}'
+    let varKeyword: ParserU<string> = pstring "var"
+    let funKeyword: ParserU<string> = pstring "fun"
+    let initVarOpKeyWord: ParserU<char> = pchar '='
+    let pSemicolon: ParserU<char> = pchar ';'
+    let ifKeyword: ParserU<string> = pstring "if"
+    let elseKeyword: ParserU<string> = pstring "else"
 module Value =
     let pInt: Parser<Value, unit> = pint32 |>> IntValue
-    let pFloat: Parser<Value, unit> = pfloat |>> FloatValue
+
+
+    let pFloat: Parser<Value, unit> =
+        let numberFormat =
+            NumberLiteralOptions.AllowMinusSign
+            ||| NumberLiteralOptions.AllowFraction
+            ||| NumberLiteralOptions.AllowExponent
+
+        numberLiteral numberFormat "number"
+        >>= fun nl ->
+                if nl.IsInteger |> not then
+                    (nl.String) |> float |> FloatValue |> preturn
+                else
+                    fail "not a float"
 
     let private pTrue: Parser<Value, unit> =
         pstring "true" |>> (fun _ -> true |> BoolValue)
 
     let private pFalse: Parser<Value, unit> =
-        pstring "false" |>> (fun _ -> true |> BoolValue)
+        pstring "false" |>> (fun _ -> false |> BoolValue)
 
     let pBool = pTrue <|> pFalse
-    let pValue = pFloat <|> pInt <|> pBool
+    let pValue = attempt pFloat <|> pInt <|> pBool
 
 module Identifier =
     let isAsciiIdStart c = isAsciiLetter c || c = '_'
@@ -74,9 +90,10 @@ module Expression =
                   ActualParameters = actualParams }))
         |>> FunCall
 
-    let pExpr() = 
+    let pExpr () =
         let exp, expImp =
-                  createParserForwardedToRef<Expression, unit> ()
+            createParserForwardedToRef<Expression, unit> ()
+
         let pfunCall = pfunCall exp
-        expImp:= (pConst <|> (attempt pfunCall) <|> pVar )
+        expImp := (pConst <|> (attempt pfunCall) <|> pVar)
         exp
