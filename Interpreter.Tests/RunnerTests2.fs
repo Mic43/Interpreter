@@ -82,7 +82,7 @@ module Run =
                 |> ScopedStatement ]
             |> Program
 
-        let actual = Runner.run program
+        let actual = Interpreter.run program
 
         (match actual with
          | Ok _ -> false
@@ -106,7 +106,7 @@ module Run =
             |> List.init (repeatsCount.Get + 1)
             |> Program
 
-        let actual = Runner.run program
+        let actual = Interpreter.run program
 
         (match actual with
          | Ok _ -> false
@@ -145,7 +145,7 @@ module Run =
             |> List.map ScopedStatement
             |> Program
 
-        let actual = Runner.run program
+        let actual = Interpreter.run program
 
         actual |> Option.ofResult |> Option.isSome
 
@@ -166,7 +166,7 @@ module Run =
             |> List.map ScopedStatement
             |> Program
 
-        let actual = Runner.run program
+        let actual = Interpreter.run program
         actual |> Option.ofResult |> Option.isSome
 
     [<Property(Verbose = true)>]
@@ -191,7 +191,7 @@ module Run =
             |> List.map ScopedStatement
             |> Program
 
-        let actual = Runner.run program
+        let actual = Interpreter.run program
 
         // actual  .=. (varInit |> Result.Ok)
         actual |> Option.ofResult |> Option.isSome
@@ -224,7 +224,7 @@ module Run =
               |> Statement.FromExpression ]
             |> Program
 
-        let actual = Runner.run program
+        let actual = Interpreter.run program
 
         let expected =
             varAssignmentValue |> IntValue |> Result.Ok
@@ -256,7 +256,7 @@ module Run =
               |> List.map ScopedStatement |> Program
     
         let expected = n.Get |> IntValue |>  Result.Ok
-        let actual = Runner.run program
+        let actual = Interpreter.run program
   
         expected .=. actual
 module Programs =
@@ -267,7 +267,7 @@ module Programs =
 
         //let sut = new Runner()
 
-        let actual = Runner.run (idFuncProgram inputVal)
+        let actual = Interpreter.run (idFuncProgram inputVal)
 
         let expected = inputVal |> Ok
 
@@ -277,7 +277,7 @@ module Programs =
     let ``identity function returns input when called with float argument`` (input: NormalFloat) =
         let inputVal = input |> float |> FloatValue
 
-        let actual = Runner.run (idFuncProgram inputVal)
+        let actual = Interpreter.run (idFuncProgram inputVal)
 
         let expected = inputVal |> Result.Ok
 
@@ -307,7 +307,7 @@ module Programs =
 
         let program = [ addFunDecl; funCall ] |> Program
 
-        let actual = Runner.run program
+        let actual = Interpreter.run program
         let expected = (a + b) |> IntValue |> Result.Ok
 
         actual .=. expected
@@ -362,6 +362,6 @@ module Programs =
             |> Program
 
         let expected = fib (n) |> IntValue |> Result.Ok
-        let actual = Runner.run program
+        let actual = Interpreter.run program
 
         Assert.Equal(expected, actual)

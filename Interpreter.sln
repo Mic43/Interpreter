@@ -7,6 +7,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Interpreter", "Interpreter\
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Interpreter.Tests", "Interpreter.Tests\Interpreter.Tests.fsproj", "{A22F9686-D6D1-42B7-8A5A-D1C8076B06EE}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Interpreter.Console", "Interpreter.Console\Interpreter.Console.fsproj", "{29D7A8B9-9FF2-4CC4-A915-92F23C10F531}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{65F9C5B9-C75B-4B7C-8F49-8326728ACC3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65F9C5B9-C75B-4B7C-8F49-8326728ACC3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65F9C5B9-C75B-4B7C-8F49-8326728ACC3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29D7A8B9-9FF2-4CC4-A915-92F23C10F531}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29D7A8B9-9FF2-4CC4-A915-92F23C10F531}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29D7A8B9-9FF2-4CC4-A915-92F23C10F531}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29D7A8B9-9FF2-4CC4-A915-92F23C10F531}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

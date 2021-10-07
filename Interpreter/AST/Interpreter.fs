@@ -3,7 +3,7 @@
 open FSharpPlus
 open System.Collections.Generic
 
-module Runner =
+module Interpreter =
 
     let runWithDefaultEnv defaultEnvironment (Program statementsList) =
 
@@ -22,7 +22,7 @@ module Runner =
             Environment.create (createDefaultEnvironment defaultEnvironment)
 
         statementsList
-        |> (Utils.traverseM (StmtEvaluator.evaluate environment))
+        |> Utils.traverseMTail (StmtEvaluator.evaluate environment)
         |> Value.getLastResultOrVoid
 
     let run program =

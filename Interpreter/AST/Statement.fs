@@ -17,8 +17,9 @@ type ScopedStatement =
     | BlockStatement of Block
     | IfStatement of If
     | WhileStatement of While
-    | ForStatement of For   
-    | Empty 
+    | ForStatement of For
+    | Empty
+
 and While =
     { Condition: Expression
       Body: ScopedStatement }
@@ -70,3 +71,28 @@ type Statement =
         exp |> ExpressionStatement |> ScopedStatement
 
 type Program = Program of Statement list
+    with static member Of statements = statements |> Program
+module Statement =
+    let varDeclare name initExp =
+        { Name = name |> Identifier.create
+          InitExpression = initExp }
+        |> VarDeclarationStatement
+        |> ScopedStatement
+
+    let block content =
+        (Block.Create content)
+        |> BlockStatement
+        |> ScopedStatement
+
+    let ifStmt condition onTrue onFalse =
+        { If.Condition = condition
+          OnTrue = onTrue
+          OnFalse = onFalse }
+        |> IfStatement
+        |> ScopedStatement
+
+    let funDeclare name paramters body =
+        { Function.Name = name |> Identifier.create
+          Parameters = paramters |> List.map Identifier.create
+          Body = body }
+        |> FunDeclaration

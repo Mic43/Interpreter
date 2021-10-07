@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup> 
     <Compile Include="AST\Utils.fs" />   
     <Compile Include="AST\Errors.fs" />
     <Compile Include="AST\Value.fs" />
@@ -14,9 +14,14 @@
     <Compile Include="AST\Printer.fs" />
     <Compile Include="AST\ExpEvaluator.fs" />
     <Compile Include="AST\StmtEvaluator.fs" />
-    <Compile Include="AST\Runner.fs" />
+    <Compile Include="AST\Interpreter.fs" />   
+
+    <Compile Include="Parser\Expression.fs" />   
+
+    <Compile Include="Parser\Statement.fs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="FParsec" Version="1.1.1" />
     <PackageReference Include="FSharpPlus" Version="1.2.1" />
   </ItemGroup>
 </Project>

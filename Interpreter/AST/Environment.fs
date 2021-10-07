@@ -68,21 +68,23 @@ module Environment =
 
         recurse environment.CurrentEnvironment
 
-    let tryUpdateVar (environment: ExecutionEnvironment) identifier newValue =
-        let tst =
-            monad' {
-                let! targetEnvironment = tryFindVariableEnvironment environment identifier
-                targetEnvironment.Variables.[identifier] <- newValue
-                return ()
-            }
+    let tryUpdateVar (environment: ExecutionEnvironment) mutableExp newValue =
+        match mutableExp with 
+        | Var identifier -> 
+            let tst =
+                monad' {
+                    let! targetEnvironment = tryFindVariableEnvironment environment identifier
+                    targetEnvironment.Variables.[identifier] <- newValue
+                    return ()
+                }
 
-        tst
-        |> Option.toResultWith (
-            Errors.create
-                ErrorType.Other
-                (identifier.ToStr()
-                 |> sprintf "variable not defined: %s")
-        )
+            tst
+            |> Option.toResultWith (
+                Errors.create
+                    ErrorType.Other
+                    (identifier.ToStr()
+                     |> sprintf "variable not defined: %s")
+            )
 
     let tryDefineVar (environment: ExecutionEnvironment) identifier value =
         if environment.Current.Variables.ContainsKey identifier then
@@ -92,7 +94,7 @@ module Environment =
             environment.Current.Variables.Add(identifier, value)
             Result.Ok()
 
-    let tryGetVar (environment: ExecutionEnvironment) identifier =
+    let tryGetVarValue (environment: ExecutionEnvironment) identifier =
         monad' {
             let! targetEnvironment = tryFindVariableEnvironment environment identifier
             return targetEnvironment.Variables.[identifier]

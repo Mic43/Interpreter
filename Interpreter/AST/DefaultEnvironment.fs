@@ -11,10 +11,10 @@ module DefaultEnvironment =
             match parametersList.[0] with
             | IntValue iv ->
                 printf "%i" iv
-                Value.Void |> Result.Ok
+                Value.Void |> Ok
             | FloatValue fv ->
                 printf "%f" fv
-                Value.Void |> Result.Ok
+                Value.Void |> Ok
             | VoidValue _ ->
                 "Cannot print void value"
                 |> (Errors.createResult Other)

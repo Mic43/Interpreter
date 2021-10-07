@@ -71,7 +71,7 @@ module ExpEvaluator =
                 return value
             }
         | Binary b ->
-            //TODO: parallelize
+            //TODO: parallelize? not possible because of side effects via environment
             let leftVal = (tryEvaluateRec b.LeftOperand)
             let rightVal = (tryEvaluateRec b.RightOperand)
 
@@ -90,7 +90,7 @@ module ExpEvaluator =
             }
         | FunCall fc ->
             let parametersValues =
-                fc.ActualParameters |> traverse tryEvaluateRec
+                fc.ActualParameters |> Utils.traverseM tryEvaluateRec
 
             parametersValues
             |> Result.bind (fun v -> v |> funEvaluator fc.Name)

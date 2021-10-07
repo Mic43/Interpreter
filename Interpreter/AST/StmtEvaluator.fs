@@ -14,7 +14,7 @@ module StmtEvaluator =
             Environment.nestNewEmptyEnvironment environment
 
             block.Content
-                    |> traverse (evaluateScopedStmt environment)
+                    |> Utils.traverseM (evaluateScopedStmt environment)
                     |> Value.getLastResultOrVoid
                     |> Result.bind (fun res ->                     
                             environment |> Environment.returnToParent
@@ -52,7 +52,7 @@ module StmtEvaluator =
         let evaluateExpression exp =
             ExpEvaluator.tryEvaluate
                 (Environment.tryUpdateVar environment)
-                (Environment.tryGetVar environment)
+                (Environment.tryGetVarValue environment)
                 ExpEvaluator.constEvaluator
                 ExpEvaluator.binaryOpEvaluator
                 ExpEvaluator.unaryOpEvaluator

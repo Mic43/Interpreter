@@ -2,7 +2,7 @@
 
 open FSharpPlus
 
-module Utils =    
+module Utils =
     let traverseAUsingFold<'T, 'U, 'Error> (mapper: 'T -> Result<'U, 'Error>) (lst: 'T list) =
         (List.foldBack
             (fun t s ->
@@ -25,7 +25,7 @@ module Utils =
                 |> (Result.map List.singleton)
                 |> Result.map (@)
 
-            restRes |> (Result.apply op) 
+            restRes |> (Result.apply op)
 
     let traverseATail<'T, 'U, 'Error> (mapper: 'T -> Result<'U, 'Error>) (lst: 'T list) : Result<'U list, 'Error> =
         let rec traverseARec mapper lst acc =
@@ -104,4 +104,3 @@ module Utils =
 
     let traverseMTail<'T, 'U, 'Error> (mapper: 'T -> Result<'U, 'Error>) (lst: 'T list) : Result<'U list, 'Error> =
         traverseMTailUntil (fun _ -> false) mapper lst
-    
