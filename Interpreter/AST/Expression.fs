@@ -35,7 +35,7 @@ type Expression =
            LeftOperand: Expression
            RightOperand: Expression |}
     | Unary of UnaryOp * Expression
-    | Assignment of MutableExpression * Expression
+    | Assignment of Expression * Expression
     | FunCall of FunCall
     | Mutable of MutableExpression
     | Constant of Value
@@ -57,7 +57,8 @@ module Expression =
     let intConstant value = value |> IntValue |> Constant
     let voidConstant () = Value.Void |> Constant
 
-    let assignment (identifier: Identifier) exp = (identifier |> Var, exp) |> Assignment
+    let assignment (identifier: Identifier) exp =
+        (identifier |> Var |> Mutable, exp) |> Assignment
 
     let binary operator leftOperand rightOperand =
         {| BinaryOp = operator
@@ -91,7 +92,7 @@ module Expression =
 
     let greater leftOperand rightOperand =
         binary (Greater |> RelationalOp) leftOperand rightOperand
-    
-    let neg operand = (Negate,operand) |> Unary
 
-    let unaryMinus operand = (Minus,operand) |> Unary
+    let neg operand = (Negate, operand) |> Unary
+
+    let unaryMinus operand = (Minus, operand) |> Unary

@@ -64,12 +64,15 @@ module ExpEvaluator =
         | Mutable m ->
             match m with
             | Var v -> varEvaluator v
-        | Assignment (ident, expr) ->
-            monad' {
-                let! value = (tryEvaluateRec expr)
-                do! varUpdater ident value
-                return value
-            }
+        | Assignment (mutableExpr, expr) ->
+            match mutableExpr with
+            | Mutable mutableExpr ->
+                monad' {
+                    let! value = (tryEvaluateRec expr)
+                    do! varUpdater mutableExpr value
+                    return value
+                }
+            | _ -> Errors.createResult ErrorType.Other "Left operand of assignment expression must be LValue"
         | Binary b ->
             //TODO: parallelize? not possible because of side effects via environment
             let leftVal = (tryEvaluateRec b.LeftOperand)
@@ -90,7 +93,8 @@ module ExpEvaluator =
             }
         | FunCall fc ->
             let parametersValues =
-                fc.ActualParameters |> Utils.traverseM tryEvaluateRec
+                fc.ActualParameters
+                |> Utils.traverseM tryEvaluateRec
 
             parametersValues
             |> Result.bind (fun v -> v |> funEvaluator fc.Name)
