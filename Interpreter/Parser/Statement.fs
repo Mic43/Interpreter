@@ -14,9 +14,8 @@ module Statement =
 
     let pExpr = pExpr ()
 
-    let pFunDecl pBlock =
-        spaces
-        >>. funKeyword
+    let pFunDecl pBlock =       
+        funKeyword
         >>. spaces
         >>. pipe3
                 (pIdentifier .>> spaces .>> pOpenBracket)
@@ -47,8 +46,8 @@ module Statement =
              >>. pExpr
              .>> spaces
              .>> pCloseBracket)
-            (pScopedStmt .>> elseKeyword)
-            (pScopedStmt)
+            (spaces >>. pScopedStmt .>> elseKeyword)
+            (spaces >>. pScopedStmt)
             (fun cond trueStmt falseStmt ->
                 { If.Condition = cond
                   OnTrue = trueStmt
@@ -67,9 +66,8 @@ module Statement =
 
         let blockStmt = block |>> BlockStatement        
 
-        let scopedStatement =
-            spaces
-            >>. (pVarStmt <|> (ifStmt |>> IfStatement) <|> pExprStmt <|> blockStmt)
+        let scopedStatement =            
+            (pVarStmt <|> (ifStmt |>> IfStatement) <|> pExprStmt <|> blockStmt)
             .>> spaces
 
         do
@@ -93,7 +91,7 @@ module Statement =
         let funDeclStmt = (pFunDecl block) |>> FunDeclaration
         let pScoped = pScopedStatement block blockImpl
 
-        funDeclStmt <|> (pScoped |>> ScopedStatement)
+        spaces >>. (funDeclStmt <|> (pScoped |>> ScopedStatement))
 
     let pProgram =
         let stmt = pStatement ()

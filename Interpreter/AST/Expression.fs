@@ -71,6 +71,9 @@ module Expression =
     let sub leftOperand rightOperand =
         binary (Sub |> ArithmeticOp) leftOperand rightOperand
 
+    let mul leftOperand rightOperand =
+        binary (Mul |> ArithmeticOp) leftOperand rightOperand
+
     let equals leftOperand rightOperand =
         binary (Equal |> RelationalOp) leftOperand rightOperand
 
