@@ -14,7 +14,7 @@ module Statement =
 
     let pExpr = pExpr ()
 
-    let pFunDecl pBlock =       
+    let pFunDecl pBlock =
         funKeyword
         >>. spaces
         >>. pipe3
@@ -53,10 +53,35 @@ module Statement =
                   OnTrue = trueStmt
                   OnFalse = falseStmt })
 
+    let pforInit =
+
+        ((attempt pVarDecl) |>> VarDeclarationInit)
+        <|> ((pExpr .>> spaces .>> pSemicolon)
+             |>> ExpressionInit)
+
+    let pForStmt pScopedStmt =
+        pipe4
+            (forKeyword
+             >>. spaces
+             >>. pOpenBracket
+             >>. spaces
+             >>. pforInit)
+            (spaces >>. pExpr .>> spaces .>> pSemicolon)
+            (spaces >>. pExpr .>> spaces .>> pCloseBracket)
+            (spaces >>. pScopedStmt)
+            (fun init cond incr body ->
+                { Initializer = init
+                  Condition = cond
+                  Increment = incr
+                  Body = body })
+
     let pScopedStatement block blockImpl =
         //let block, blockImpl =
         //    createParserForwardedToRef<Block, unit> ()
         let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()
+
+        let forStmt, forStmtImp =
+            createParserForwardedToRef<For, unit> ()
 
         let pVarStmt = pVarDecl |>> VarDeclarationStatement
 
@@ -64,10 +89,14 @@ module Statement =
             pExpr .>> spaces .>> pSemicolon
             |>> ExpressionStatement
 
-        let blockStmt = block |>> BlockStatement        
+        let blockStmt = block |>> BlockStatement
 
-        let scopedStatement =            
-            (pVarStmt <|> (ifStmt |>> IfStatement) <|> pExprStmt <|> blockStmt)
+        let scopedStatement =
+            (pVarStmt
+             <|> (forStmt |>> ForStatement)
+             <|> (ifStmt |>> IfStatement)
+             <|> pExprStmt
+             <|> blockStmt)
             .>> spaces
 
         do
@@ -81,6 +110,7 @@ module Statement =
                <!> "block"
 
         do ifStmtImp := (pIfStmt scopedStatement)
+        do forStmtImp := (pForStmt scopedStatement)
 
         scopedStatement
 
@@ -91,7 +121,8 @@ module Statement =
         let funDeclStmt = (pFunDecl block) |>> FunDeclaration
         let pScoped = pScopedStatement block blockImpl
 
-        spaces >>. (funDeclStmt <|> (pScoped |>> ScopedStatement))
+        spaces
+        >>. (funDeclStmt <|> (pScoped |>> ScopedStatement))
 
     let pProgram =
         let stmt = pStatement ()

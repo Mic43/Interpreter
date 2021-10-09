@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
-  <ItemGroup> 
-    <Compile Include="AST\Utils.fs" />   
+  <ItemGroup>
+    <Compile Include="AST\Utils.fs" />
     <Compile Include="AST\Errors.fs" />
     <Compile Include="AST\Value.fs" />
     <Compile Include="AST\Identifier.fs" />
@@ -15,11 +15,10 @@
     <Compile Include="AST\ExpEvaluator.fs" />
     <Compile Include="AST\StmtEvaluator.fs" />
     <Compile Include="AST\Interpreter.fs" />
-    <Compile Include="Parser\Elementary.fs" />   
-
-    <Compile Include="Parser\Expression.fs" />   
-
+    <Compile Include="Parser\Elementary.fs" />
+    <Compile Include="Parser\Expression.fs" />
     <Compile Include="Parser\Statement.fs" />
+    <Compile Include="Runner.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FParsec" Version="1.1.1" />

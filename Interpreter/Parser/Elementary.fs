@@ -26,7 +26,7 @@ module Reserved =
     let pSemicolon: ParserU<char> = pchar ';'
     let ifKeyword: ParserU<string> = pstring "if"
     let elseKeyword: ParserU<string> = pstring "else"
-
+    let forKeyword: ParserU<string> = pstring "for"
 module Value =
     let pInt: Parser<Value, unit> = pint32 |>> IntValue
 
