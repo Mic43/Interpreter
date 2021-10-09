@@ -61,9 +61,7 @@ module ExpEvaluator =
 
         match expression with
         | Constant c -> constEvaluator c
-        | Mutable m ->
-            match m with
-            | Var v -> varEvaluator v
+        | Mutable m -> varEvaluator m
         | Assignment (mutableExpr, expr) ->
             match mutableExpr with
             | Mutable mutableExpr ->
@@ -86,7 +84,7 @@ module ExpEvaluator =
             }
         // Result.map2 (binOpEvaluator b.BinaryOp) leftVal rightVal
 
-        | Unary (op, exp) ->
+        | SimpleUnary (op, exp) ->
             monad' {
                 let! value = tryEvaluateRec exp
                 return! unaryOpEvaluator op value
@@ -98,3 +96,17 @@ module ExpEvaluator =
 
             parametersValues
             |> Result.bind (fun v -> v |> funEvaluator fc.Name)
+        | Increment (op, mutableExpr) ->
+            match mutableExpr with
+            | Mutable mutableExpr ->
+                monad' {
+                    let! beforeValue = (varEvaluator mutableExpr)
+                    let! newValue = beforeValue + (IntValue 1)
+                    do! varUpdater mutableExpr newValue
+
+                    return
+                        match op with
+                        | Pre -> newValue
+                        | Post -> beforeValue
+                }
+            | _ -> Errors.createResult ErrorType.Other "Left operand of assignment expression must be LValue"

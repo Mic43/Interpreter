@@ -33,10 +33,13 @@ let main argv =
             else
                 n * silnia(n-1);
         }
-        fun aa()
-        {           
-            for(var i=3;i<10;i=i+1)            
-                println(i);            
+        fun aa(x)
+        {     
+            {
+              //  var x = 5;
+                for(var i=0;i<x;++i)            
+                    println(i);            
+            }
         }
 
        // println(silnia (4));
@@ -46,7 +49,7 @@ let main argv =
                
         //println (2.0/5);
         //println(n);
-        aa();
+        aa(n++);
         "
     Interpreter.Runner.run str
     Console.ReadLine() |> ignore

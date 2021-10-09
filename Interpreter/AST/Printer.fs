@@ -26,7 +26,7 @@ module Printer =
                 (b.LeftOperand |> expressionToStr)
                 (b.BinaryOp |> operatorToStr)
                 (b.RightOperand |> expressionToStr)
-        | Unary (_, _) -> failwith "Not Implemented"
+        | SimpleUnary (_, _) -> failwith "Not Implemented"
         | Assignment (_, _) -> failwith "Not Implemented"
         | FunCall fc ->
             sprintf

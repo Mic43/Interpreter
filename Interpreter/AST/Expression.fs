@@ -7,6 +7,10 @@ type UnaryOp =
     | Negate
     | Minus
 
+type IncrementOp =
+    | Pre
+    | Post
+
 type BinaryArithmeticOp =
     | Add
     | Sub
@@ -34,7 +38,8 @@ type Expression =
         {| BinaryOp: BinaryOp
            LeftOperand: Expression
            RightOperand: Expression |}
-    | Unary of UnaryOp * Expression
+    | SimpleUnary of UnaryOp * Expression
+    | Increment of IncrementOp * Expression
     | Assignment of Expression * Expression
     | FunCall of FunCall
     | Mutable of MutableExpression
@@ -93,6 +98,10 @@ module Expression =
     let greater leftOperand rightOperand =
         binary (Greater |> RelationalOp) leftOperand rightOperand
 
-    let neg operand = (Negate, operand) |> Unary
+    let neg operand = (Negate, operand) |> SimpleUnary
 
-    let unaryMinus operand = (Minus, operand) |> Unary
+    let unaryMinus operand = (Minus, operand) |> SimpleUnary
+
+    let preIncr operand = (Pre, operand) |> Increment
+
+    let postIncr operand = (Post, operand) |> Increment

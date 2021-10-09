@@ -64,5 +64,8 @@ module Expression =
 
         opp.AddOperator(PrefixOperator("!", spaces, 8, true, Expression.neg))
         opp.AddOperator(PrefixOperator("-", spaces, 8, true, Expression.unaryMinus))
+        opp.AddOperator(PrefixOperator("++", spaces, 9, true, Expression.preIncr))
+        opp.AddOperator(PostfixOperator("++", spaces, 9, true, Expression.postIncr))
+
 
     let pExpr () = opp.ExpressionParser
