@@ -119,7 +119,9 @@ module StmtEvaluator =
                             Value.Void
                         }
 
-                return! (loop fs.Body fs.Condition fs.Increment)
+                let! loopRes = (loop fs.Body fs.Condition fs.Increment)
+                Environment.returnToParent environment
+                return loopRes
             }
         | Empty -> Value.Void |> Ok
 

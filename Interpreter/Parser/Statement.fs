@@ -75,13 +75,35 @@ module Statement =
                   Increment = incr
                   Body = body })
 
+    let pWhileStmt pScopedStatement =
+        pipe2
+            (whileKeyword
+             >>. spaces
+             >>. pOpenBracket
+             >>. spaces
+             >>. pExpr
+             .>> spaces
+             .>> pCloseBracket)
+            (spaces >>. pScopedStatement)
+            (fun cond body -> { While.Condition = cond; Body = body })
+
+    let pBlock pscopedStatement =
+        pOpenCurlyBracket
+        >>. spaces
+        >>. (many pscopedStatement)
+        .>> spaces
+        .>> pCloseCurlyBracket
+        |>> Block.Create
+        <!> "block"
+
     let pScopedStatement block blockImpl =
-        //let block, blockImpl =
-        //    createParserForwardedToRef<Block, unit> ()
         let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()
 
         let forStmt, forStmtImp =
             createParserForwardedToRef<For, unit> ()
+
+        let whileStmt, whileStmtImp =
+            createParserForwardedToRef<While, unit> ()
 
         let pVarStmt = pVarDecl |>> VarDeclarationStatement
 
@@ -93,24 +115,17 @@ module Statement =
 
         let scopedStatement =
             (pVarStmt
+             <|> (whileStmt |>> WhileStatement)
              <|> (forStmt |>> ForStatement)
              <|> (ifStmt |>> IfStatement)
              <|> pExprStmt
              <|> blockStmt)
             .>> spaces
 
-        do
-            blockImpl
-            := pOpenCurlyBracket
-               >>. spaces
-               >>. (many scopedStatement)
-               .>> spaces
-               .>> pCloseCurlyBracket
-               |>> Block.Create
-               <!> "block"
-
+        do blockImpl := (pBlock scopedStatement)
         do ifStmtImp := (pIfStmt scopedStatement)
         do forStmtImp := (pForStmt scopedStatement)
+        do whileStmtImp := (pWhileStmt scopedStatement)
 
         scopedStatement
 

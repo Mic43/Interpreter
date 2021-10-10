@@ -27,6 +27,8 @@ module Reserved =
     let ifKeyword: ParserU<string> = pstring "if"
     let elseKeyword: ParserU<string> = pstring "else"
     let forKeyword: ParserU<string> = pstring "for"
+    let whileKeyword: ParserU<string> = pstring "while"
+
 module Value =
     let pInt: Parser<Value, unit> = pint32 |>> IntValue
 

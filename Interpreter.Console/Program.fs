@@ -35,11 +35,15 @@ let main argv =
         }
         fun aa(x)
         {     
-            {
+            
               //  var x = 5;
-                for(var i=0;i<x;++i)            
-                    println(i);            
-            }
+            var i = 0;
+            while (i < x)            
+            {
+                for(var i=0;i<x;++i)                            
+                    println(i);                                                        
+                i++;
+            }   
         }
 
        // println(silnia (4));
