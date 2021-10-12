@@ -51,9 +51,57 @@ module Value =
     let private pFalse: Parser<Value, unit> =
         pstring "false" |>> (fun _ -> false |> BoolValue)
 
+    let pString: ParserU<Value> =
+        let str s = pstring s
+
+        let stringLiteral =
+            let escape =
+                anyOf "\"\\/bfnrt"
+                |>> function
+                    | 'b' -> "\b"
+                    | 'f' -> "\u000C"
+                    | 'n' -> "\n"
+                    | 'r' -> "\r"
+                    | 't' -> "\t"
+                    | c -> string c // every other char is mapped to itself
+
+            let unicodeEscape =
+                /// converts a hex char ([0-9a-fA-F]) to its integer number (0-15)
+                let hex2int c = (int c &&& 15) + (int c >>> 6) * 9
+
+                str "u"
+                >>. pipe4
+                        hex
+                        hex
+                        hex
+                        hex
+                        (fun h3 h2 h1 h0 ->
+                            (hex2int h3) * 4096
+                            + (hex2int h2) * 256
+                            + (hex2int h1) * 16
+                            + hex2int h0
+                            |> char
+                            |> string)
+
+            let escapedCharSnippet = str "\\" >>. (escape <|> unicodeEscape)
+
+            let normalCharSnippet =
+                manySatisfy (fun c -> c <> '"' && c <> '\\')
+
+            between (str "\"") (str "\"") (stringsSepBy normalCharSnippet escapedCharSnippet)
+        //(manyTill anyChar (pchar '"')))
+
+        stringLiteral |>> StringValue
+    //(between (pchar '"') (pchar '"') (many ))
+    //|>> fun chars ->
+    //        chars
+    //        |> List.toArray
+    //        |> (System.String >> StringValue)
+
     let pBool = pTrue <|> pFalse
 
-    let pValue = attempt pFloat <|> pInt <|> pBool
+    let pValue =
+        attempt pFloat <|> pInt <|> pBool <|> pString
 
 module Identifier =
     let isAsciiIdStart c = isAsciiLetter c || c = '_'

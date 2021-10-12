@@ -51,9 +51,9 @@ let main argv =
         var n = 3;
         var k = n = 6;
                
-        //println (2.0/5);
-        //println(n);
-        aa(n++);
+        println (\"\");
+        println((\"12 2 aa \"));
+        //aa(n++);
         "
     Interpreter.Runner.run str
     Console.ReadLine() |> ignore

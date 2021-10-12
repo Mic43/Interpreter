@@ -29,7 +29,8 @@ module Interpreter =
         let defaultEnvironment =
             [ "print", DefaultEnvironment.tryPrint
               "println", DefaultEnvironment.tryPrintLn
-              "readInt", DefaultEnvironment.tryReadInt ]
+              "readInt", DefaultEnvironment.tryReadInt
+              "strlen", DefaultEnvironment.tryGetStringLen ]
             |> Map.ofList
 
         runWithDefaultEnv defaultEnvironment program
