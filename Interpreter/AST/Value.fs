@@ -8,13 +8,29 @@ type Value =
     | BoolValue of bool
     | StringValue of string
     | VoidValue of unit
-
+    | ListValue of Value List
     member this.ToBool() =
         match this with
         | IntValue v -> System.Convert.ToBoolean(v)
         | FloatValue v -> System.Convert.ToBoolean(v)
         | BoolValue v -> v
         | _ -> invalidArg "val" "cannot convert void to bool"
+
+    override this.ToString() =
+        match this with
+        | IntValue i -> sprintf "%d" i
+        | FloatValue f -> sprintf "%f" f
+        | VoidValue _ -> "null"
+        | BoolValue (b) -> sprintf "%b" b
+        | StringValue (s) -> s
+        | ListValue lv ->
+            match lv with
+            | [] -> ""
+            | lv ->
+                lv
+                |> List.map (fun l -> l.ToString())
+                |> List.reduce (fun a b -> sprintf "%s, %s" a b)
+            |> sprintf "[%s]"
 
     member this.ToFloat() =
         match this with
@@ -35,14 +51,7 @@ module Value =
 
     let toFloat (v: Value) = v.ToFloat()
     let toBool (v: Value) = v.ToBool()
-
-    let toStr =
-        function
-        | IntValue i -> sprintf "%d" i
-        | FloatValue f -> sprintf "%f" f
-        | VoidValue _ -> "null"
-        | BoolValue (b) -> sprintf "%b" b
-        | StringValue (s) -> s
+    let toStr (v: Value) = v.ToString()
 
     let private compute resultConvFloat resultConvInt resultConvString opFloat opInt opString v1 v2 =
         match (v1, v2) with

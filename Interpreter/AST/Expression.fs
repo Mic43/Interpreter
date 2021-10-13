@@ -31,9 +31,11 @@ type BinaryOp =
     | RelationalOp of BinaryRelationalOp
     | LogicalOp of BinaryLogicalOp
 
-type MutableExpression = Var of Identifier
+type MutableExpression =
+    | Var of Identifier
+    | IndexedVar of (Identifier * Expression)
 
-type Expression =
+and Expression =
     | Binary of
         {| BinaryOp: BinaryOp
            LeftOperand: Expression

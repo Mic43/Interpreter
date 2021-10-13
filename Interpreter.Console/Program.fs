@@ -45,14 +45,22 @@ let main argv =
                 i++;
             }   
         }
+        fun printTab(array)
+        {
+            for(var i=0;i<len(array);++i)                            
+                print(array[i] + \" \");      
+        }
 
-       // println(silnia (4));
-       // println(fib(8));
+       println(silnia (4));
+       println(fib(8));
         var n = 3;
         var k = n = 6;
-               
-        println (\"\");
-        println((\"12 2 aa \"));
+        var aa = [   3, 4,5, true , 3.4 , \"aaaa\" ,1 ];      
+        //println (\"\");
+        //println((\"12 2 aa \"));
+        println (aa);
+        //println(aa[0]);
+        printTab(aa);
         //aa(n++);
         "
     Interpreter.Runner.run str

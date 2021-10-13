@@ -15,6 +15,8 @@ module Common =
             printfn "%A: Leaving %s (%A)" stream.Position label reply.Status
             reply
 
+    let trimmed p = spaces >>. p .>> spaces
+
 module Reserved =
     let pOpenBracket: ParserU<char> = pchar '('
     let pCloseBracket: ParserU<char> = pchar ')'
@@ -28,8 +30,14 @@ module Reserved =
     let elseKeyword: ParserU<string> = pstring "else"
     let forKeyword: ParserU<string> = pstring "for"
     let whileKeyword: ParserU<string> = pstring "while"
+    let openSquareBracket: ParserU<string> = pstring "["
+    let closeSquareBracket: ParserU<string> = pstring "]"
+    let comma: ParserU<char> = pchar ','
 
 module Value =
+    open Reserved
+    open Common
+
     let pInt: Parser<Value, unit> = pint32 |>> IntValue
 
     let pFloat: Parser<Value, unit> =
@@ -92,16 +100,28 @@ module Value =
         //(manyTill anyChar (pchar '"')))
 
         stringLiteral |>> StringValue
-    //(between (pchar '"') (pchar '"') (many ))
-    //|>> fun chars ->
-    //        chars
-    //        |> List.toArray
-    //        |> (System.String >> StringValue)
 
     let pBool = pTrue <|> pFalse
 
-    let pValue =
-        attempt pFloat <|> pInt <|> pBool <|> pString
+    let pList pValue =
+        between (openSquareBracket .>> spaces) (spaces .>> closeSquareBracket) (sepBy (pValue |> trimmed) (comma))
+        |>> ListValue
+
+    let private pValueInternal () =
+        let list, listImp =
+            createParserForwardedToRef<Value, unit> ()
+
+        let pVal =
+            list
+            <|> attempt pFloat
+            <|> pInt
+            <|> pBool
+            <|> pString
+
+        do listImp := pList pVal
+        pVal
+
+    let pValue = pValueInternal ()
 
 module Identifier =
     let isAsciiIdStart c = isAsciiLetter c || c = '_'

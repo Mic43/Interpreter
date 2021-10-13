@@ -68,20 +68,18 @@ module Environment =
 
         recurse environment.CurrentEnvironment
 
-    let tryUpdateVar (environment: ExecutionEnvironment) mutableExp newValue =
-        match mutableExp with
-        | Var identifier ->
-            monad' {
-                let! targetEnvironment = tryFindVariableEnvironment environment identifier
-                targetEnvironment.Variables.[identifier] <- newValue
-                return ()
-            }
-            |> Option.toResultWith (
-                Errors.create
-                    ErrorType.Other
-                    (identifier.ToStr()
-                     |> sprintf "variable not defined: %s")
-            )
+    let tryUpdateVar (environment: ExecutionEnvironment) identifier newValue =
+        monad' {
+            let! targetEnvironment = tryFindVariableEnvironment environment identifier
+            targetEnvironment.Variables.[identifier] <- newValue
+            return ()
+        }
+        |> Option.toResultWith (
+            Errors.create
+                ErrorType.Other
+                (identifier.ToStr()
+                 |> sprintf "variable not defined: %s")
+        )
 
     let tryDefineVar (environment: ExecutionEnvironment) identifier value =
         if environment.Current.Variables.ContainsKey identifier then
@@ -91,19 +89,17 @@ module Environment =
             environment.Current.Variables.Add(identifier, value)
             Result.Ok()
 
-    let tryGetVarValue (environment: ExecutionEnvironment) mutableExp =
-        match mutableExp with
-        | Var identifier ->
-            monad' {
-                let! targetEnvironment = tryFindVariableEnvironment environment identifier
-                return targetEnvironment.Variables.[identifier]
-            }
-            |> Option.toResultWith (
-                Errors.create
-                    ErrorType.Other
-                    (identifier.ToStr()
-                     |> sprintf "variable not defined: %s")
-            )
+    let tryGetVarValue (environment: ExecutionEnvironment) identifier =
+        monad' {
+            let! targetEnvironment = tryFindVariableEnvironment environment identifier
+            return targetEnvironment.Variables.[identifier]
+        }
+        |> Option.toResultWith (
+            Errors.create
+                ErrorType.Other
+                (identifier.ToStr()
+                 |> sprintf "variable not defined: %s")
+        )
 
     let tryDefineCallable enviroment (callable: Callable) =
         let message =

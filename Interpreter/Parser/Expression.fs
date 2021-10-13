@@ -10,9 +10,15 @@ open Identifier
 open FSharpPlus.Control.TryBlock
 
 module Expression =
-
     let pConst = pValue |>> Expression.Constant
-    let pVar = pIdentifier |>> (Var >> Mutable)
+
+    //TODO: not efficent, pIdentifier is common to both cases
+    let pVar pExpr =
+       attempt( pipe2
+            (pIdentifier .>> (openSquareBracket |> trimmed))
+            (pExpr .>> (closeSquareBracket |> trimmed))
+            (fun ident exp -> (ident, exp) |> IndexedVar |> Mutable))
+        <|> (pIdentifier |>> (Var >> Mutable))
 
     let pExpList pExpr =
         sepBy (spaces >>. pExpr .>> spaces) pListSeparator
@@ -33,7 +39,7 @@ module Expression =
     let pTermExpr pExpr =
 
         let pfunCall = pfunCall pExpr
-        (pConst <|> (attempt pfunCall) <|> pVar)
+        (pConst <|> (attempt pfunCall) <|> (pVar pExpr))
 
     let opp =
         new OperatorPrecedenceParser<Expression, unit, unit>()

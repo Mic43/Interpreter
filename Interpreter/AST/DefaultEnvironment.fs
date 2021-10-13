@@ -9,22 +9,8 @@ module DefaultEnvironment =
             "Wrong parameter count"
             |> (Errors.createResult ErrorType.Other)
         else
-            match parametersList.[0] with
-            | IntValue iv ->
-                printf "%i" iv
-                Value.Void |> Ok
-            | FloatValue fv ->
-                printf "%f" fv
-                Value.Void |> Ok
-            | VoidValue _ ->
-                "Cannot print void value"
-                |> (Errors.createResult Other)
-            | BoolValue (b) ->
-                printf "%b" b
-                Value.Void |> Ok
-            | StringValue (s) ->
-                printf "%s" s
-                Value.Void |> Ok
+            parametersList.[0].ToString() |> printf "%s"
+            Value.Void |> Ok
 
     let tryPrintLn (parametersList: Value list) =
         monad' {
@@ -42,10 +28,11 @@ module DefaultEnvironment =
             | true, int -> int |> IntValue |> Result.Ok
             | _ -> Errors.createResult ErrorType.Other "error parsing int"
 
-    let tryGetStringLen (parametersList: Value list) =
+    let tryGetLen (parametersList: Value list) =
         match parametersList with
         | [ StringValue v ] -> v.Length |> IntValue |> Result.Ok
-        | [ _ ] -> Errors.createResult ErrorType.Other "error getting len of the string"
+        | [ ListValue v ] -> v.Length |> IntValue |> Result.Ok
+        | [ _ ] -> Errors.createResult ErrorType.Other "error getting len of the variable"
         | _ ->
             "Wrong parameter count"
             |> (Errors.createResult ErrorType.Other)
