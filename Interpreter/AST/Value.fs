@@ -39,6 +39,12 @@ type Value =
         | BoolValue v -> System.Convert.ToSingle(v) |> float
         | v -> invalidArg "val" (sprintf "cannot convert %A to float" v)
 
+    member this.ToList() =
+        match this with
+        | ListValue v -> v
+        | VoidValue _ -> invalidArg "val" "cannot convert void to list"
+        | v -> v |> List.singleton
+
 module Value =
     let Void = () |> VoidValue
     let createVoid () = Void
@@ -53,43 +59,63 @@ module Value =
     let toBool (v: Value) = v.ToBool()
     let toStr (v: Value) = v.ToString()
 
-    let private compute resultConvFloat resultConvInt resultConvString opFloat opInt opString v1 v2 =
+    let private compute
+        resultConvFloat
+        resultConvInt
+        resultConvString
+        resultConvList
+        opFloat
+        opInt
+        opString
+        opList
+        v1
+        v2
+        =
         match (v1, v2) with
         | (IntValue v1, IntValue v2) -> (opInt v1 v2) |> resultConvInt |> Result.Ok
-        | (StringValue s1, v2) ->
+        | (ListValue _, _)
+        | (_, ListValue _) ->
+            monad' {
+                let! opList = opList
+                let! resultConvList = resultConvList
+
+                return
+                    (opList (v1.ToList()) (v2.ToList()))
+                    |> resultConvList
+            }
+            |> Option.toResultWith (
+                "Operation is not supported for list types"
+                |> (Errors.create Other)
+            )
+        | (StringValue _, _)
+        | (_, StringValue _) ->
             monad' {
                 let! opString = opString
                 let! resultConvString = resultConvString
-                return (opString s1 (toStr v2)) |> resultConvString
+
+                return
+                    (opString (toStr v1) (toStr v2))
+                    |> resultConvString
             }
             |> Option.toResultWith (
                 "Operation is not supported for string types"
                 |> (Errors.create Other)
             )
-        | (v1, StringValue s2) ->
-            monad' {
-                let! opString = opString
-                let! resultConvString = resultConvString
-                return (opString (toStr v1) s2) |> resultConvString
-            }
-            |> Option.toResultWith (
-                "Operation is not supported for string types"
-                |> (Errors.create Other)
-            )
+
         | (VoidValue _, _)
         | (_, VoidValue _) ->
             "cannot convert void to float"
             |> (Errors.createResult Other)
-        | (v1, v2) ->
+        | (_, _) ->
             (opFloat (v1 |> toFloat) (v2 |> toFloat))
             |> resultConvFloat
             |> Ok
 
-    let private computeArithmetic opFloat opInt opString v1 v2 =
-        compute FloatValue IntValue (Some StringValue) opFloat opInt opString v1 v2
+    let private computeArithmetic opFloat opInt opString opList v1 v2 =
+        compute FloatValue IntValue (Some StringValue) (Some ListValue) opFloat opInt opString opList v1 v2
 
-    let private computeRelational opFloat opInt opString v1 v2 =
-        compute BoolValue BoolValue (Some BoolValue) opFloat opInt opString v1 v2
+    let private computeRelational opFloat opInt opString opList v1 v2 =
+        compute BoolValue BoolValue (Some BoolValue) (Some BoolValue) opFloat opInt opString opList v1 v2
 
     let private computeLogical operatorFun (v1: Value) (v2: Value) =
         (operatorFun (v1.ToBool()) (v2.ToBool()))
@@ -97,11 +123,16 @@ module Value =
         |> Result.Ok
 
     let (+) v1 v2 =
-        computeArithmetic (+) (+) (Some(+)) v1 v2
+        computeArithmetic (+) (+) (Some(+)) (Some List.append) v1 v2
 
-    let (-) v1 v2 = computeArithmetic (-) (-) None v1 v2
-    let (*) v1 v2 = computeArithmetic (*) (*) None v1 v2
-    let (/) v1 v2 = computeArithmetic (/) (/) None v1 v2
+    let (-) v1 v2 =
+        computeArithmetic (-) (-) None None v1 v2
+
+    let (*) v1 v2 =
+        computeArithmetic (*) (*) None None v1 v2
+
+    let (/) v1 v2 =
+        computeArithmetic (/) (/) None None v1 v2
 
     let (.&&) v1 v2 = computeLogical (&&) v1 v2
     let (.||) v1 v2 = computeLogical (||) v1 v2
@@ -112,8 +143,12 @@ module Value =
         not (v.ToBool()) |> BoolValue |> Result.Ok
 
     let (.==) v1 v2 =
-        computeRelational (=) (=) (Some(=)) v1 v2
+        computeRelational (=) (=) (Some(=)) (Some(=)) v1 v2
 
     let (.!=) v1 v2 = (v1 .== v2) |> Result.map (!)
-    let (.>) v1 v2 = computeRelational (>) (>) None v1 v2
-    let (.<) v1 v2 = computeRelational (<) (<) None v1 v2
+
+    let (.>) v1 v2 =
+        computeRelational (>) (>) None None v1 v2
+
+    let (.<) v1 v2 =
+        computeRelational (<) (<) None None v1 v2

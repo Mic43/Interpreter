@@ -48,20 +48,26 @@ let main argv =
         fun printTab(array)
         {
             for(var i=0;i<len(array);++i)                            
-                print(array[i] + \" \");      
+                print(\" \" + array[i] + \" \");      
         }
 
        println(silnia (4));
        println(fib(8));
+        var str = \"kwakwa\";
         var n = 3;
         var k = n = 6;
-        var aa = [   3, 4,5, true , 3.4 , \"aaaa\" ,1 ];      
+        var aa = [   k, 4,5, true , 3.4 , \"aaaa\" ,1 ];      
         //println (\"\");
         //println((\"12 2 aa \"));
         println (aa);
         //println(aa[0]);
         printTab(aa);
         //aa(n++);
+        var bb = 1;
+        bb = [ aa[0],[silnia(3),2 + bb] ,str,str[1]];
+        println (aa);
+        println (bb);
+        println(3 + aa  + 1 + false + \"dsds\");
         "
     Interpreter.Runner.run str
     Console.ReadLine() |> ignore

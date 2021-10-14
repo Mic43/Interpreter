@@ -10,14 +10,16 @@ open Identifier
 open FSharpPlus.Control.TryBlock
 
 module Expression =
-    let pConst = pValue |>> Expression.Constant
+    let pConst = pValue |>> Constant
 
     //TODO: not efficent, pIdentifier is common to both cases
     let pVar pExpr =
-       attempt( pipe2
-            (pIdentifier .>> (openSquareBracket |> trimmed))
-            (pExpr .>> (closeSquareBracket |> trimmed))
-            (fun ident exp -> (ident, exp) |> IndexedVar |> Mutable))
+        attempt (
+            pipe2
+                (pIdentifier .>> (openSquareBracket |> trimmed))
+                (pExpr .>> (closeSquareBracket |> trimmed))
+                (fun ident exp -> (ident, exp) |> IndexedVar |> Mutable)
+        )
         <|> (pIdentifier |>> (Var >> Mutable))
 
     let pExpList pExpr =
@@ -28,18 +30,24 @@ module Expression =
         //>>.
         (pipe2
             (pIdentifier .>> spaces)
-            (pOpenBracket >>. spaces >>. (pExpList pExpr)
+            (OpenBracket >>. spaces >>. (pExpList pExpr)
              .>> spaces
-             .>> pCloseBracket)
+             .>> closeBracket)
             (fun ident actualParams ->
                 { FunCall.Name = ident
                   ActualParameters = actualParams }))
         |>> FunCall
 
+    let pListCreation pExpr =
+        openSquareBracket >>. spaces >>. (pExpList pExpr)
+        .>> spaces
+        .>> closeSquareBracket
+        |>> ListCreation
+
     let pTermExpr pExpr =
 
         let pfunCall = pfunCall pExpr
-        (pConst <|> (attempt pfunCall) <|> (pVar pExpr))
+        pConst <|> (attempt pfunCall) <|> (pListCreation pExpr) <|> (pVar pExpr)
 
     let opp =
         new OperatorPrecedenceParser<Expression, unit, unit>()

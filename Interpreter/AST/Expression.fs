@@ -36,6 +36,7 @@ type MutableExpression =
     | IndexedVar of (Identifier * Expression)
 
 and Expression =
+    
     | Binary of
         {| BinaryOp: BinaryOp
            LeftOperand: Expression
@@ -43,6 +44,7 @@ and Expression =
     | SimpleUnary of UnaryOp * Expression
     | Increment of IncrementOp * Expression
     | Assignment of Expression * Expression
+    | ListCreation of Expression list
     | FunCall of FunCall
     | Mutable of MutableExpression
     | Constant of Value

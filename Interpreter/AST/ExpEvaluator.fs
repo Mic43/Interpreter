@@ -133,3 +133,7 @@ module ExpEvaluator =
             parametersValues
             |> Result.bind (fun v -> v |> funEvaluator fc.Name)
         | Increment (op, exp) -> incrementEvaluator op exp
+        | ListCreation (expList) ->
+            expList
+            |> (Utils.traverseM tryEvaluateRec)
+            |> Result.map ListValue

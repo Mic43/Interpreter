@@ -18,8 +18,8 @@ module Common =
     let trimmed p = spaces >>. p .>> spaces
 
 module Reserved =
-    let pOpenBracket: ParserU<char> = pchar '('
-    let pCloseBracket: ParserU<char> = pchar ')'
+    let OpenBracket: ParserU<char> = pchar '('
+    let closeBracket: ParserU<char> = pchar ')'
     let pOpenCurlyBracket: ParserU<char> = pchar '{'
     let pCloseCurlyBracket: ParserU<char> = pchar '}'
     let varKeyword: ParserU<string> = pstring "var"
@@ -103,22 +103,22 @@ module Value =
 
     let pBool = pTrue <|> pFalse
 
-    let pList pValue =
-        between (openSquareBracket .>> spaces) (spaces .>> closeSquareBracket) (sepBy (pValue |> trimmed) (comma))
-        |>> ListValue
+    // let pList pValue =
+    //     between (openSquareBracket .>> spaces) (spaces .>> closeSquareBracket) (sepBy (pValue |> trimmed) (comma))
+    //     |>> ListValue
 
     let private pValueInternal () =
-        let list, listImp =
-            createParserForwardedToRef<Value, unit> ()
+        // let list, listImp =
+        //     createParserForwardedToRef<Value, unit> ()
 
         let pVal =
-            list
-            <|> attempt pFloat
+          //  list
+             attempt pFloat
             <|> pInt
             <|> pBool
             <|> pString
 
-        do listImp := pList pVal
+       // do listImp := pList pVal
         pVal
 
     let pValue = pValueInternal ()

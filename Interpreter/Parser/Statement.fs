@@ -18,8 +18,8 @@ module Statement =
         funKeyword
         >>. spaces
         >>. pipe3
-                (pIdentifier .>> spaces .>> pOpenBracket)
-                (spaces >>. pIdentList .>> spaces .>> pCloseBracket)
+                (pIdentifier .>> spaces .>> OpenBracket)
+                (spaces >>. pIdentList .>> spaces .>> closeBracket)
                 (spaces >>. pBlock .>> spaces)
                 (fun name parametrs body ->
                     { Name = name
@@ -41,11 +41,11 @@ module Statement =
         pipe3
             (ifKeyword
              >>. spaces
-             >>. pOpenBracket
+             >>. OpenBracket
              >>. spaces
              >>. pExpr
              .>> spaces
-             .>> pCloseBracket)
+             .>> closeBracket)
             (spaces >>. pScopedStmt .>> elseKeyword)
             (spaces >>. pScopedStmt)
             (fun cond trueStmt falseStmt ->
@@ -63,11 +63,11 @@ module Statement =
         pipe4
             (forKeyword
              >>. spaces
-             >>. pOpenBracket
+             >>. OpenBracket
              >>. spaces
              >>. pforInit)
             (spaces >>. pExpr .>> spaces .>> pSemicolon)
-            (spaces >>. pExpr .>> spaces .>> pCloseBracket)
+            (spaces >>. pExpr .>> spaces .>> closeBracket)
             (spaces >>. pScopedStmt)
             (fun init cond incr body ->
                 { Initializer = init
@@ -79,11 +79,11 @@ module Statement =
         pipe2
             (whileKeyword
              >>. spaces
-             >>. pOpenBracket
+             >>. OpenBracket
              >>. spaces
              >>. pExpr
              .>> spaces
-             .>> pCloseBracket)
+             .>> closeBracket)
             (spaces >>. pScopedStatement)
             (fun cond body -> { While.Condition = cond; Body = body })
 
