@@ -6,20 +6,22 @@ module StmtEvaluator =
     let rec private evaluateScopedStmt
         (environment: ExecutionEnvironment)
         (exp: ScopedStatement)
-        : Result<Value, RunError> =
+        : Result<Value, EvalStopped> =
 
         let evaluateScopedStmtRec = evaluateScopedStmt environment
 
+        // Here ReturnStmtReached is changed to its actual value
         let evaluateBlock block =
             Environment.nestNewEmptyEnvironment environment
 
             block.Content
             |> Utils.traverseM (evaluateScopedStmt environment)
-            |> Value.getLastResultOrVoid
+            |> Value.getReturnedValueOrVoid
             |> Result.bind
                 (fun res ->
                     environment |> Environment.returnToParent
                     res |> Ok)
+            |> Result.mapError EvalError
 
         let evaluateFunctionCall funIdentifier (actualParametersValues: Value list) =
             let funcs =
@@ -32,10 +34,11 @@ module StmtEvaluator =
                     (funcs.TryGetValue funIdentifier)
                     |> Option.ofPair
                     |> Option.toResultWith (
-                        Errors.create
+                        (Errors.create
                             ErrorType.Other
                             (funIdentifier.ToStr()
-                             |> sprintf "function not defined: %s")
+                             |> sprintf "function not defined: %s"))
+                        |> EvalError
                     )
 
                 match foundFunc with
@@ -43,7 +46,10 @@ module StmtEvaluator =
                     let! paramsWithValues =
                         actualParametersValues
                         |> Result.protect (List.zip func.Parameters)
-                        |> Result.mapError (fun e -> Errors.create ErrorType.Evaluation "wrong parameters count")
+                        |> Result.mapError
+                            (fun _ ->
+                                Errors.create ErrorType.Evaluation "wrong parameters count"
+                                |> EvalError)
 
                     Environment.nestNewEnvironment environment (paramsWithValues |> Map.ofSeq)
 
@@ -52,7 +58,10 @@ module StmtEvaluator =
                     environment |> Environment.returnToParent
 
                     return res
-                | CompiledFunction compiledFun -> return! compiledFun.Execute actualParametersValues
+                | CompiledFunction compiledFun ->
+                    return!
+                        ((compiledFun.Execute actualParametersValues)
+                         |> (Result.mapError EvalError))
             }
 
         let evaluateExpression exp =
@@ -72,9 +81,10 @@ module StmtEvaluator =
                 return!
                     (Environment.tryDefineVar environment vd.Name initVal)
                     |> (Result.map Value.createVoid)
+                    |> Result.mapError EvalError
             }
 
-        let rec loop body condition incrementExp : Result<Value, RunError> =
+        let rec loop body condition incrementExp : Result<Value, EvalStopped> =
             monad' {
                 let! condVal = condition |> evaluateExpression
 
@@ -123,6 +133,7 @@ module StmtEvaluator =
                 Environment.returnToParent environment
                 return loopRes
             }
+        | ReturnStatement exp -> (evaluateExpression exp) |> Result.bind (ReturnStmtReached >> Error)
         | Empty -> Value.Void |> Ok
 
     let evaluate (environment: ExecutionEnvironment) statement =
@@ -131,4 +142,10 @@ module StmtEvaluator =
         | (FunDeclaration _, false) ->
             "Function can be defined only on global scope"
             |> Errors.createResult Other
-        | (ScopedStatement stmt, _) -> evaluateScopedStmt environment stmt
+        | (ScopedStatement stmt, _) ->
+            evaluateScopedStmt environment stmt
+            |> Result.mapError
+                (fun e ->
+                    match e with
+                    | EvalError re -> re
+                    | _ -> invalidOp "Return should be replaced by its value by this point")

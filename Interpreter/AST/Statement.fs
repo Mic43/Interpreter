@@ -18,6 +18,7 @@ type ScopedStatement =
     | IfStatement of If
     | WhileStatement of While
     | ForStatement of For
+    | ReturnStatement of Expression
     | Empty
 
 and While =
@@ -72,6 +73,7 @@ type Statement =
 
 type Program = Program of Statement list
     with static member Of statements = statements |> Program
+
 module Statement =
     let varDeclare name initExp =
         { Name = name |> Identifier.create

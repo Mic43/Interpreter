@@ -24,7 +24,7 @@ let idFuncProgram inputVal =
         { Name = funIdent
           Parameters = [ varIdent ]
           Body =
-              [ varIdent |> Var |> Mutable |> ExpressionStatement ]
+              [ varIdent |> Var |> Mutable |> ReturnStatement ]
               |> Block.Create }
 
     [ idFunDecl |> FunDeclaration
@@ -102,7 +102,10 @@ module Run =
               InitExpression = varInit |> Constant }
 
         let program =
-            (fun _ -> vDecl |> VarDeclarationStatement |> ScopedStatement)
+            (fun _ ->
+                vDecl
+                |> VarDeclarationStatement
+                |> ScopedStatement)
             |> List.init (repeatsCount.Get + 1)
             |> Program
 
@@ -232,7 +235,7 @@ module Run =
         actual .=. expected
 
     [<Property>]
-    let ``increment variable in while loop works correctly`` (n:PositiveInt) =
+    let ``increment variable in while loop works correctly`` (n: PositiveInt) =
 
         let init = 0
         let iVar = "i" |> Identifier.create
@@ -246,19 +249,21 @@ module Run =
             { While.Condition = Expression.less (Expression.var "i") (Expression.intConstant n.Get)
               Body =
                   (Expression.assignment iVar (Expression.add (Expression.var "i") (Expression.intConstant 1)))
-                  |> ExpressionStatement } |> WhileStatement
+                  |> ExpressionStatement }
+            |> WhileStatement
 
         let program =
             [ vDecl
               whileStmt
-              (Expression.var "i") |> ExpressionStatement
-              ] 
-              |> List.map ScopedStatement |> Program
-    
-        let expected = n.Get |> IntValue |>  Result.Ok
+              (Expression.var "i") |> ExpressionStatement ]
+            |> List.map ScopedStatement
+            |> Program
+
+        let expected = n.Get |> IntValue |> Result.Ok
         let actual = Interpreter.run program
-  
+
         expected .=. actual
+
 module Programs =
 
     [<Property>]
@@ -294,8 +299,8 @@ module Programs =
                   [ "a" |> Identifier.create
                     "b" |> Identifier.create ]
               Body =
-                  [ Expression.add ("a" |> Expression.var) ("b" |> Expression.var) ]
-                  |> Block.FromExpressions }
+                  Block.Create [ Expression.add ("a" |> Expression.var) ("b" |> Expression.var)
+                                 |> ReturnStatement ] }
             |> FunDeclaration
 
         let funCall =
@@ -346,11 +351,11 @@ module Programs =
                   [ { Condition =
                           (Expression.equals varExp zeroConst)
                           |> Expression.or_ (Expression.equals varExp oneConst)
-                      OnTrue = oneConst |> ExpressionStatement
+                      OnTrue = oneConst |> ReturnStatement
                       OnFalse =
                           (Expression.funCall funName [ (Expression.sub varExp oneConst) ])
                           |> Expression.add (Expression.funCall funName [ (Expression.sub varExp twoConst) ])
-                          |> ExpressionStatement }
+                          |> ReturnStatement }
                     |> IfStatement ]
                   |> Block.Create }
             |> FunDeclaration

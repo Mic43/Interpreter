@@ -45,6 +45,18 @@ type Value =
         | VoidValue _ -> invalidArg "val" "cannot convert void to list"
         | v -> v |> List.singleton
 
+// type ErrorType =
+//     | Evaluation
+//     | Other
+
+// type RunError = { Message: string; Type: ErrorType }
+
+type EvalStopped = EvalError of RunError | ReturnStmtReached of Value
+
+// module Errors =
+//     let create errorType str = { Message = str; Type = errorType }
+//     let createResult errorType str = (create errorType str) |> Result.Error
+
 module Value =
     let Void = () |> VoidValue
     let createVoid () = Void
@@ -55,6 +67,14 @@ module Value =
         res
         |> Result.map (fun vl -> vl |> (List.tryLast >> (Option.defaultValue Void)))
 
+    let getReturnedValueOrVoid (res: Result<Value list, EvalStopped>) =       
+        res |> Result.map (fun _ -> Void)
+        |> Result.bindError
+            (fun e ->
+                match e with
+                | ReturnStmtReached value -> value  |> Ok
+                | EvalError e -> e |> Error)
+        
     let toFloat (v: Value) = v.ToFloat()
     let toBool (v: Value) = v.ToBool()
     let toStr (v: Value) = v.ToString()

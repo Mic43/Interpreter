@@ -79,7 +79,7 @@ module Environment =
                 ErrorType.Other
                 (identifier.ToStr()
                  |> sprintf "variable not defined: %s")
-        )
+        ) 
 
     let tryDefineVar (environment: ExecutionEnvironment) identifier value =
         if environment.Current.Variables.ContainsKey identifier then
