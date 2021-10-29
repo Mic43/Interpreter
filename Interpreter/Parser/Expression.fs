@@ -30,7 +30,7 @@ module Expression =
         //>>.
         (pipe2
             (pIdentifier .>> spaces)
-            (OpenBracket >>. spaces >>. (pExpList pExpr)
+            (openBracket >>. spaces >>. (pExpList pExpr)
              .>> spaces
              .>> closeBracket)
             (fun ident actualParams ->

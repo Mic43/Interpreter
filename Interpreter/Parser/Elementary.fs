@@ -18,7 +18,7 @@ module Common =
     let trimmed p = spaces >>. p .>> spaces
 
 module Reserved =
-    let OpenBracket: ParserU<char> = pchar '('
+    let openBracket: ParserU<char> = pchar '('
     let closeBracket: ParserU<char> = pchar ')'
     let pOpenCurlyBracket: ParserU<char> = pchar '{'
     let pCloseCurlyBracket: ParserU<char> = pchar '}'
@@ -32,6 +32,7 @@ module Reserved =
     let whileKeyword: ParserU<string> = pstring "while"
     let openSquareBracket: ParserU<string> = pstring "["
     let closeSquareBracket: ParserU<string> = pstring "]"
+    let returnKeyword:ParserU<string> = pstring "return"
     let comma: ParserU<char> = pchar ','
 
 module Value =
@@ -102,11 +103,6 @@ module Value =
         stringLiteral |>> StringValue
 
     let pBool = pTrue <|> pFalse
-
-    // let pList pValue =
-    //     between (openSquareBracket .>> spaces) (spaces .>> closeSquareBracket) (sepBy (pValue |> trimmed) (comma))
-    //     |>> ListValue
-
     let private pValueInternal () =
         // let list, listImp =
         //     createParserForwardedToRef<Value, unit> ()

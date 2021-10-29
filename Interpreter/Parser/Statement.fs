@@ -18,7 +18,7 @@ module Statement =
         funKeyword
         >>. spaces
         >>. pipe3
-                (pIdentifier .>> spaces .>> OpenBracket)
+                (pIdentifier .>> spaces .>> openBracket)
                 (spaces >>. pIdentList .>> spaces .>> closeBracket)
                 (spaces >>. pBlock .>> spaces)
                 (fun name parametrs body ->
@@ -41,7 +41,7 @@ module Statement =
         pipe3
             (ifKeyword
              >>. spaces
-             >>. OpenBracket
+             >>. openBracket
              >>. spaces
              >>. pExpr
              .>> spaces
@@ -63,7 +63,7 @@ module Statement =
         pipe4
             (forKeyword
              >>. spaces
-             >>. OpenBracket
+             >>. openBracket
              >>. spaces
              >>. pforInit)
             (spaces >>. pExpr .>> spaces .>> pSemicolon)
@@ -79,7 +79,7 @@ module Statement =
         pipe2
             (whileKeyword
              >>. spaces
-             >>. OpenBracket
+             >>. openBracket
              >>. spaces
              >>. pExpr
              .>> spaces
@@ -87,6 +87,9 @@ module Statement =
             (spaces >>. pScopedStatement)
             (fun cond body -> { While.Condition = cond; Body = body })
 
+    let pReturnStmt = 
+        returnKeyword  >>. spaces >>. pExpr .>> spaces .>> pSemicolon |>> ReturnStatement
+    
     let pBlock pscopedStatement =
         pOpenCurlyBracket
         >>. spaces
@@ -96,6 +99,7 @@ module Statement =
         |>> Block.Create
         <!> "block"
 
+    
     let pScopedStatement block blockImpl =
         let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()
 
@@ -106,7 +110,7 @@ module Statement =
             createParserForwardedToRef<While, unit> ()
 
         let pVarStmt = pVarDecl |>> VarDeclarationStatement
-
+       
         let pExprStmt =
             pExpr .>> spaces .>> pSemicolon
             |>> ExpressionStatement
@@ -115,6 +119,7 @@ module Statement =
 
         let scopedStatement =
             (pVarStmt
+             <|> pReturnStmt
              <|> (whileStmt |>> WhileStatement)
              <|> (forStmt |>> ForStatement)
              <|> (ifStmt |>> IfStatement)

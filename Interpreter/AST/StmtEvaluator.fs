@@ -10,19 +10,16 @@ module StmtEvaluator =
 
         let evaluateScopedStmtRec = evaluateScopedStmt environment
 
-        // Here ReturnStmtReached is changed to its actual value
         let evaluateBlock block =
             Environment.nestNewEmptyEnvironment environment
 
-            block.Content
-            |> Utils.traverseM (evaluateScopedStmt environment)
-            |> Value.getReturnedValueOrVoid
-            |> Result.bind
-                (fun res ->
-                    environment |> Environment.returnToParent
-                    res |> Ok)
-            |> Result.mapError EvalError
-
+            let res = block.Content
+                        |> Utils.traverseMTail evaluateScopedStmtRec 
+                        |> Result.map (fun _ -> Value.Void)
+           
+            do environment |> Environment.returnToParent
+            res
+       
         let evaluateFunctionCall funIdentifier (actualParametersValues: Value list) =
             let funcs =
                 match environment.Global.Kind with
@@ -53,15 +50,13 @@ module StmtEvaluator =
 
                     Environment.nestNewEnvironment environment (paramsWithValues |> Map.ofSeq)
 
-                    let! res = func.Body |> evaluateBlock
+                    let! res = func.Body |> evaluateBlock |> Value.getReturnedValue
 
                     environment |> Environment.returnToParent
 
                     return res
                 | CompiledFunction compiledFun ->
-                    return!
-                        ((compiledFun.Execute actualParametersValues)
-                         |> (Result.mapError EvalError))
+                    return! (compiledFun.Execute actualParametersValues) |> Result.mapError EvalError
             }
 
         let evaluateExpression exp =

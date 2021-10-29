@@ -67,13 +67,14 @@ module Value =
         res
         |> Result.map (fun vl -> vl |> (List.tryLast >> (Option.defaultValue Void)))
 
-    let getReturnedValueOrVoid (res: Result<Value list, EvalStopped>) =       
-        res |> Result.map (fun _ -> Void)
-        |> Result.bindError
+    /// Changes returnstmtreached error result to actual Ok returned value 
+    let getReturnedValue (res: Result<Value, EvalStopped>) =       
+       
+        res |> Result.bindError
             (fun e ->
                 match e with
                 | ReturnStmtReached value -> value  |> Ok
-                | EvalError e -> e |> Error)
+                | EvalError e -> e |> EvalError |> Error)
         
     let toFloat (v: Value) = v.ToFloat()
     let toBool (v: Value) = v.ToBool()

@@ -18,25 +18,29 @@ open System
 [<EntryPoint>]
 let main argv =      
     let str = "
+        var global = \"dsds\";
+        
         fun fib ( n ) 
-        {            
-            if (!!(n == 0 || n == 1)) 
-                1;
+        {     
+            //var re = 4;       
+            if (n == 0 || n == 1) 
+                return 1;
             else 
-                fib( n - 1) + fib (n-2);
+                return fib( n - 1) + fib (n-2);
         } 
         fun silnia(n)
         {
             
             if (n < 2 && n > -1)
-              { 1;}
+               return 1;
             else
-                n * silnia(n-1);
+                return n * silnia(n-1);
         }
         fun aa(x)
         {     
             
               //  var x = 5;
+             println(global);
             var i = 0;
             while (i < x)            
             {
@@ -44,30 +48,38 @@ let main argv =
                     println(i);                                                        
                 i++;
             }   
+
         }
+        
         fun printTab(array)
         {
+            println(global);
             for(var i=0;i<len(array);++i)                            
                 print(\" \" + array[i] + \" \");      
         }
 
-       println(silnia (4));
-       println(fib(8));
-        var str = \"kwakwa\";
-        var n = 3;
-        var k = n = 6;
-        var aa = [   k, 4,5, true , 3.4 , \"aaaa\" ,1 ];      
-        //println (\"\");
-        //println((\"12 2 aa \"));
-        println (aa);
-        //println(aa[0]);
-        printTab(aa);
-        //aa(n++);
-        var bb = 1;
-        bb = [ aa[0],[silnia(3),2 + bb] ,str,str[1]];
-        println (aa);
-        println (bb);
-        println(3 + aa  + 1 + false + \"dsds\");
+       println(silnia (8));
+
+       println(fib (5));
+       println(fib(1));
+       
+       aa(5);
+
+       // var str = \"kwakwa\";
+       // var n = 3;
+       // var k = n = 6;
+       // var aa = [   k, 4,5, true , 3.4 , \"aaaa\" ,1 ];      
+       // //println (\"\");
+       // //println((\"12 2 aa \"));
+       //// println (aa);
+       // //println(aa[0]);
+       // printTab(aa);
+       // //aa(n++);
+       //// var bb = 1;
+       // //bb = [ aa[0],[silnia(3),2 + bb] ,str,str[1]];
+       //// println (aa);
+       //// println (bb);
+       //// println(3 + aa  + 1 + false + \"dsds\");
         "
     Interpreter.Runner.run str
     Console.ReadLine() |> ignore
