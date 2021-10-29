@@ -2,6 +2,7 @@
 
 open FParsec
 open Interpreter.AST
+open Interpreter.AST
 
 module Statement =
     open Identifier
@@ -38,9 +39,9 @@ module Statement =
                   InitExpression = exp })
 
     let pIfStmt pScopedStmt =
-        
-        let pElseBranch = elseKeyword  >>. spaces >>. pScopedStmt
-        
+
+        let pElseBranch = elseKeyword >>. spaces >>. pScopedStmt
+
         pipe3
             (ifKeyword
              >>. spaces
@@ -49,7 +50,7 @@ module Statement =
              >>. pExpr
              .>> spaces
              .>> closeBracket)
-            (spaces >>. pScopedStmt .>> spaces )
+            (spaces >>. pScopedStmt .>> spaces)
             (opt pElseBranch)
             (fun cond trueStmt falseStmt ->
                 { If.Condition = cond
@@ -90,9 +91,15 @@ module Statement =
             (spaces >>. pScopedStatement)
             (fun cond body -> { While.Condition = cond; Body = body })
 
-    let pReturnStmt = 
-        returnKeyword  >>. spaces >>. pExpr .>> spaces .>> pSemicolon |>> ReturnStatement
-    
+    let pReturnStmt =
+        returnKeyword >>. spaces >>. opt pExpr
+        .>> spaces
+        .>> pSemicolon
+        |>> fun exp ->
+                exp
+                |> Option.defaultValue (Value.Void |> Constant)
+                |> ReturnStatement
+
     let pBlock pscopedStatement =
         pOpenCurlyBracket
         >>. spaces
@@ -102,7 +109,7 @@ module Statement =
         |>> Block.Create
         <!> "block"
 
-    
+
     let pScopedStatement block blockImpl =
         let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()
 
@@ -113,7 +120,7 @@ module Statement =
             createParserForwardedToRef<While, unit> ()
 
         let pVarStmt = pVarDecl |>> VarDeclarationStatement
-       
+
         let pExprStmt =
             pExpr .>> spaces .>> pSemicolon
             |>> ExpressionStatement

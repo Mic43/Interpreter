@@ -29,9 +29,9 @@ let main argv =
         } 
         fun silnia(n)
         {
-            
+           
             if (n < 2 && n > -1)
-               return 1;            
+               return 1;                   
             return n * silnia(n-1);
         }
         fun aa(x)
@@ -61,12 +61,12 @@ let main argv =
                 {
                     print(array[i] + \" \");
                     if(array[i + 1] < 0)
-                        return true;
+                        return ;
 
                 }
                 //return false;
         }
-
+        println(silnia(3));
         println(foo([1,2,5,-9,7]));
        // var str = \"kwakwa\";
        // var n = 3;
