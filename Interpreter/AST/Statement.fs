@@ -34,7 +34,7 @@ and For =
 and If =
     { Condition: Expression
       OnTrue: ScopedStatement
-      OnFalse: ScopedStatement }
+      OnFalse: ScopedStatement option }
 
 and Block =
     { Content: ScopedStatement list }

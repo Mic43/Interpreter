@@ -24,17 +24,15 @@ let main argv =
         {     
             //var re = 4;       
             if (n == 0 || n == 1) 
-                return 1;
-            else 
-                return fib( n - 1) + fib (n-2);
+                return 1;            
+            return fib( n - 1) + fib (n-2);
         } 
         fun silnia(n)
         {
             
             if (n < 2 && n > -1)
-               return 1;
-            else
-                return n * silnia(n-1);
+               return 1;            
+            return n * silnia(n-1);
         }
         fun aa(x)
         {     
@@ -57,14 +55,19 @@ let main argv =
             for(var i=0;i<len(array);++i)                            
                 print(\" \" + array[i] + \" \");      
         }
+        fun foo(array)
+        {
+              for(var i=0;i<len(array) -1;++i)
+                {
+                    print(array[i] + \" \");
+                    if(array[i + 1] < 0)
+                        return true;
 
-       println(silnia (8));
+                }
+                //return false;
+        }
 
-       println(fib (5));
-       println(fib(1));
-       
-       aa(5);
-
+        println(foo([1,2,5,-9,7]));
        // var str = \"kwakwa\";
        // var n = 3;
        // var k = n = 6;

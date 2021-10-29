@@ -66,7 +66,7 @@ module Printer =
                 "if %s \n\t%s\nelse\n\t%s"
                 (is.Condition |> expressionToStr)
                 (is.OnTrue |> scopedStmtToStr)
-                (is.OnFalse |> scopedStmtToStr)
+                (is.OnFalse |> Option.defaultValue Empty |> scopedStmtToStr)
         | WhileStatement ws -> sprintf "while %s\n\t%s" (ws.Condition |> expressionToStr) (ws.Body |> scopedStmtToStr)
         | ForStatement fs ->
             sprintf

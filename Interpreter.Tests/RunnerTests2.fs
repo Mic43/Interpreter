@@ -355,7 +355,7 @@ module Programs =
                       OnFalse =
                           (Expression.funCall funName [ (Expression.sub varExp oneConst) ])
                           |> Expression.add (Expression.funCall funName [ (Expression.sub varExp twoConst) ])
-                          |> ReturnStatement }
+                          |> ReturnStatement |> Some}
                     |> IfStatement ]
                   |> Block.Create }
             |> FunDeclaration

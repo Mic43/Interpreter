@@ -38,6 +38,9 @@ module Statement =
                   InitExpression = exp })
 
     let pIfStmt pScopedStmt =
+        
+        let pElseBranch = elseKeyword  >>. spaces >>. pScopedStmt
+        
         pipe3
             (ifKeyword
              >>. spaces
@@ -46,8 +49,8 @@ module Statement =
              >>. pExpr
              .>> spaces
              .>> closeBracket)
-            (spaces >>. pScopedStmt .>> elseKeyword)
-            (spaces >>. pScopedStmt)
+            (spaces >>. pScopedStmt .>> spaces )
+            (opt pElseBranch)
             (fun cond trueStmt falseStmt ->
                 { If.Condition = cond
                   OnTrue = trueStmt

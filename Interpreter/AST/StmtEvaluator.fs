@@ -103,7 +103,7 @@ module StmtEvaluator =
                     if condRes |> Value.toBool then
                         ifs.OnTrue
                     else
-                        ifs.OnFalse
+                        ifs.OnFalse |>Option.defaultValue Empty
 
                 return! (branch |> evaluateScopedStmtRec)
             }
