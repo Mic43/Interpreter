@@ -66,6 +66,7 @@ let main argv =
                 }
                 //return false;
         }
+    
         println(silnia(3));
         println(foo([1,2,5,-9,7]));
        // var str = \"kwakwa\";

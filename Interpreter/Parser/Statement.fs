@@ -137,10 +137,10 @@ module Statement =
              <|> blockStmt)
             .>> spaces
 
-        do blockImpl := (pBlock scopedStatement)
-        do ifStmtImp := (pIfStmt scopedStatement)
-        do forStmtImp := (pForStmt scopedStatement)
-        do whileStmtImp := (pWhileStmt scopedStatement)
+        do blockImpl := pBlock scopedStatement
+        do ifStmtImp := pIfStmt scopedStatement
+        do forStmtImp := pForStmt scopedStatement
+        do whileStmtImp := pWhileStmt scopedStatement
 
         scopedStatement
 
@@ -148,7 +148,7 @@ module Statement =
         let block, blockImpl =
             createParserForwardedToRef<Block, unit> ()
 
-        let funDeclStmt = (pFunDecl block) |>> FunDeclaration
+        let funDeclStmt = pFunDecl block |>> FunDeclaration
         let pScoped = pScopedStatement block blockImpl
 
         spaces
