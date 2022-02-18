@@ -41,7 +41,7 @@ module StmtEvaluator =
                 match foundFunc with
                 | Function func ->
                     let! paramsWithValues =
-                        actualParametersValues
+                        actualParametersValues |> List.map ref
                         |> Result.protect (List.zip func.Parameters)
                         |> Result.mapError
                             (fun _ ->
@@ -117,7 +117,7 @@ module StmtEvaluator =
                         monad' {
                             let! initValue = vd.InitExpression |> evaluateExpression
 
-                            [ vd.Name, initValue ]
+                            [ vd.Name, ref initValue ]
                             |> Map.ofList
                             |> Environment.nestNewEnvironment environment
 

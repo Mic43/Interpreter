@@ -7,6 +7,7 @@ open FParsec.CharParsers
 open FSharpPlus
 
 
+type RunnerError = | RunError of RunError | ParseError of string
 module Runner =
     let private preprocessComments programStr =
         let comment = "//"
@@ -25,6 +26,11 @@ module Runner =
         match programString |> preprocessor |> run parser with
         | Success (program, _, _) ->
             match Interpreter.run program with
-            | Ok r -> r |> ignore
-            | Error (errorValue) -> printfn "Failure: %A" errorValue
-        | Failure (errorMsg, _, _) -> printfn "Failure: %s" errorMsg
+            | Ok r -> r |> Ok  
+            | Error (errorValue) -> printfn "Failure: %A" errorValue   
+                                    errorValue |> RunError |> Error                               
+        | Failure (errorMsg, _, _) ->         
+            printfn "Failure: %s" errorMsg
+            errorMsg |> ParseError |> Error
+
+

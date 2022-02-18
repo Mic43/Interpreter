@@ -9,12 +9,13 @@ type Value =
     | StringValue of string
     | VoidValue of unit
     | ListValue of Value List
+    
     member this.ToBool() =
         match this with
         | IntValue v -> System.Convert.ToBoolean(v)
         | FloatValue v -> System.Convert.ToBoolean(v)
         | BoolValue v -> v
-        | _ -> invalidArg "val" "cannot convert void to bool"
+        | _ -> invalidArg "val" "cannot convert this type to bool"
 
     override this.ToString() =
         match this with

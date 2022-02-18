@@ -101,21 +101,20 @@ module ExpEvaluator =
                 Errors.createResult Other "Left operand of assignment expression must be LValue"
                 |> Result.mapError EvalError
 
-        let mutableExpEvaluator mutableExpr : Result<Value,EvalStopped>=
+        let rec mutableExpEvaluator mutableExpr : Result<Value, EvalStopped> =
+
             match mutableExpr with
             | Var v -> varEvaluator v |> Result.mapError EvalError
             | IndexedVar (ident, exp) ->
                 monad' {
                     let! index = exp |> tryEvaluateRec
 
-                    let! value =
-                        (varEvaluator ident)
-                        |> (Result.mapError EvalError)
+                    let! value = (mutableExpEvaluator ident)
 
                     return!
-                        match (value, index) with
-                        | (ListValue lv, IntValue index) -> lv.[index] |> Result.Ok
-                        | (StringValue s, IntValue index) -> s.[index] |> string |> StringValue |> Result.Ok
+                        match (value, index) with //TODO: .[index] handle error!
+                        | (ListValue lv, IntValue index) -> lv.[index] |> Ok
+                        | (StringValue s, IntValue index) -> s.[index] |> string |> StringValue |> Ok
                         | _ ->
                             (Errors.createResult Other "indexing expression must evaluate to int")
                             |> (Result.mapError EvalError)

@@ -33,7 +33,7 @@ type BinaryOp =
 
 type MutableExpression =
     | Var of Identifier
-    | IndexedVar of (Identifier * Expression)
+    | IndexedVar of (MutableExpression * Expression)
 
 and Expression =
     
@@ -55,8 +55,8 @@ and FunCall =
 
 module Expression =
     let var identifier =
-        identifier |> Identifier.create |> Var |> Mutable
-
+        identifier |> Identifier.create |> Var |> Mutable    
+     
     let funCall identifier parameters =
         { Name = identifier
           ActualParameters = parameters }

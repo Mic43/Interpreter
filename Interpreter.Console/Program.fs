@@ -66,9 +66,9 @@ let main argv =
                 }
                 //return false;
         }
-    
-        println(silnia(3));
-        println(foo([1,2,5,-9,7]));
+            aa(10);
+        //println(silnia(3));
+        //println(foo([1,2,5,-9,7]));
        // var str = \"kwakwa\";
        // var n = 3;
        // var k = n = 6;
@@ -84,7 +84,9 @@ let main argv =
        //// println (aa);
        //// println (bb);
        //// println(3 + aa  + 1 + false + \"dsds\");
-        "
+      //  var    z = [0];
+       // z[0]++;
+       "
     Interpreter.Runner.run str
     Console.ReadLine() |> ignore
     0 
