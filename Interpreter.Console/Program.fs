@@ -72,7 +72,7 @@ let main argv =
         println (zzz);
 
             //aa(10);
-        //println(silnia(3));
+        println(silnia(3));
         //println(foo([1,2,5,-9,7]));
        // var str = \"kwakwa\";
        // var n = 3;

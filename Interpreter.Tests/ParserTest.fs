@@ -1,3 +1,5 @@
+
+
 module ParserTests
 
 open Xunit
@@ -5,6 +7,7 @@ open Interpreter.AST
 open FsCheck
 open FsCheck.Xunit
 open FSharpPlus
+open FSharpPlus.Data
 open Interpreter.AST
 
 
@@ -92,4 +95,34 @@ module Run =
         let expected = Value.Void |> Ok
 
         actual .=. expected
+    [<Property>]
+    let ``simple variable assignment works correctly`` (before: int) (after: int) =
+        let str =
+            $"
+                var v = {before};                                
+                v = {after};                
+            "
+
+        let actual = Interpreter.Runner.run str
+
+        let expected = after |> IntValue |> Ok
+
+        actual .=. expected
     
+    [<Property>]
+    let ``simple 1D array assignment by index works correctly``(after: int) =
+        
+        let inBounds = Gen.elements [0..2] |> Arb.fromGen
+
+        Prop.forAll inBounds (fun index ->  
+        let str =
+            $"
+                var v = [1,2,3];                                
+                v[{index}] = {after};                
+            "
+
+        let actual = Interpreter.Runner.run str
+
+        let expected = after |> IntValue |> Ok
+
+        actual .=. expected)

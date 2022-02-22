@@ -1,6 +1,8 @@
 ﻿namespace Interpreter.AST
 
 open FSharpPlus
+open System.Collections.Generic
+open System.Linq
 
 type ExpEvaluator = Expression -> Result<Value, RunError>
 
@@ -52,7 +54,7 @@ module ExpEvaluator =
 
     let rec tryEvaluate
         (varUpdater: Identifier -> Value -> Result<unit, RunError>)
-        (varEvaluator: Identifier -> Result<Value, RunError>)
+        (varEvaluator: Identifier -> Result<Ref<Value>, RunError>)
         constEvaluator
         binOpEvaluator
         unaryOpEvaluator
@@ -63,34 +65,14 @@ module ExpEvaluator =
         let tryEvaluateRec =
             tryEvaluate varUpdater varEvaluator constEvaluator binOpEvaluator unaryOpEvaluator funEvaluator
 
-        let incrementEvaluator op exp =
-            (match exp with
-             | Mutable mutableExpr ->
-                 match mutableExpr with
-                 | Var identifier ->
-                     monad' {
-                         let! beforeValue = (varEvaluator identifier)
-                         let! newValue = beforeValue + (IntValue 1)
-                         do! varUpdater identifier newValue
 
-                         return
-                             match op with
-                             | Pre -> newValue
-                             | Post -> beforeValue
-                     }
-             | _ ->
-                 "Left operand of assignment expression must be LValue"
-                 |> (Errors.createResult Other))
-            |> Result.mapError EvalError
-        
-
-        // let rec assignmentEvaluatorRec mutableExpr expr = 
+        // let rec assignmentEvaluatorRec mutableExpr expr =
         //    match mutableExpr with
-        //    | Var identifier ->             
+        //    | Var identifier ->
         //         (tryEvaluateRec expr,varEvaluator identifier |> Result.mapError EvalError)
-        //    | IndexedVar(m, index) -> 
+        //    | IndexedVar(m, index) ->
         //         let res = assignmentEvaluatorRec m expr
-        //         monad' {                   
+        //         monad' {
         //             let! newValue = (fst res)
         //             let! target = snd res
 
@@ -99,46 +81,84 @@ module ExpEvaluator =
         //         }
 
 
-        let assignmentEvaluator mutableExpr expr =
-            match mutableExpr with
-            | Mutable mutableExpr ->
-                match mutableExpr with
-                | Var ident ->
-                    monad' {
-                        let! value = (tryEvaluateRec expr)
+        // let assignmentEvaluator mutableExpr expr =
+        //     match mutableExpr with
+        //     | Mutable mutableExpr ->
+        //         match mutableExpr with
+        //         | Var ident ->
+        //             monad' {
+        //                 let! value = (tryEvaluateRec expr)
 
-                        do!
-                            (varUpdater ident value)
-                            |> Result.mapError EvalError
+        //                 do!
+        //                     (varUpdater ident value)
+        //                     |> Result.mapError EvalError
 
-                        return value
-                    }
-            | _ ->
-                Errors.createResult Other "Left operand of assignment expression must be LValue"
-                |> Result.mapError EvalError
+        //                 return value
+        //             }
+        //     | _ ->
+        //         Errors.createResult Other "Left operand of assignment expression must be LValue"
+        //         |> Result.mapError EvalError
 
-        let rec mutableExpEvaluator mutableExpr : Result<Value, EvalStopped> =
+        let rec mutableExpEvaluator mutableExpr : Result<Ref<Value>, EvalStopped> =
 
             match mutableExpr with
             | Var v -> varEvaluator v |> Result.mapError EvalError
             | IndexedVar (ident, exp) ->
                 monad' {
                     let! index = exp |> tryEvaluateRec
-
                     let! value = (mutableExpEvaluator ident)
 
                     return!
-                        match (value, index) with //TODO: .[index] handle error!
-                        | (ListValue lv, IntValue index) -> lv.[index] |> Ok
-                        | (StringValue s, IntValue index) -> s.[index] |> string |> StringValue |> Ok
+                        match (value.Value, index) with //TODO: .[index] handle error!
+                        | (ListValue lv, IntValue index) -> ref lv.[index] |> Ok
+                        | (StringValue s, IntValue index) -> ref (s.[index] |> string |> StringValue) |> Ok
                         | _ ->
-                            (Errors.createResult Other "indexing expression must evaluate to int")
-                            |> (Result.mapError EvalError)
+                            "indexing expression must evaluate to int"
+                            |> Errors.createResult Other
+                            |> Result.mapError EvalError
                 }
+
+        let assignmentEvaluator mutableExpr expr =
+            match mutableExpr with
+            | Mutable mutableExpr ->
+                monad' {
+                    let! result = mutableExpEvaluator mutableExpr
+                    let! newValue = (tryEvaluateRec expr)
+
+                    result.Value <- newValue
+
+                    return newValue
+                }
+            | _ ->
+                "Left operand of assignment expression must be LValue"
+                |> Errors.createResult Other
+                |> Result.mapError EvalError
+
+        let incrementEvaluator op exp =
+            match exp with
+            | Mutable mutableExpr -> failwith "not implemented"
+                // match mutableExpr with
+                // | Var identifier ->
+                //     monad' {
+                //         let! beforeValue = (varEvaluator identifier)
+                //         let! newValue = beforeValue + (IntValue 1)
+                //         do! varUpdater identifier newValue
+
+                //         return
+                //             match op with
+                //             | Pre -> newValue
+                //             | Post -> beforeValue
+                //     }
+            | _ ->
+                "Left operand of assignment expression must be LValue"
+                |> Errors.createResult Other
+                |> Result.mapError EvalError
 
         match expression with
         | Constant c -> constEvaluator c
-        | Mutable m -> mutableExpEvaluator m
+        | Mutable m ->
+            mutableExpEvaluator m
+            |> Result.map (fun r -> r.Value)
         | Assignment (mutableExpr, expr) -> assignmentEvaluator mutableExpr expr
         | Binary b ->
             //TODO: parallelize? not possible because of side effects via environment
@@ -168,4 +188,4 @@ module ExpEvaluator =
         | ListCreation (expList) ->
             expList
             |> (Utils.traverseM tryEvaluateRec)
-            |> Result.map ListValue
+            |> Result.map (fun l -> l.ToList() |> ListValue)

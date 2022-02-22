@@ -1,6 +1,8 @@
 namespace Interpreter.AST
 
 open FSharpPlus
+open System.Collections.Generic
+open System.Linq
 
 type Value =
     | IntValue of int
@@ -8,8 +10,8 @@ type Value =
     | BoolValue of bool
     | StringValue of string
     | VoidValue of unit
-    | ListValue of Value List
-    
+    | ListValue of List<Value>
+
     member this.ToBool() =
         match this with
         | IntValue v -> System.Convert.ToBoolean(v)
@@ -25,13 +27,13 @@ type Value =
         | BoolValue (b) -> sprintf "%b" b
         | StringValue (s) -> s
         | ListValue lv ->
-            match lv with
-            | [] -> ""
-            | lv ->
+            if lv.Count = 0 then
                 lv
-                |> List.map (fun l -> l.ToString())
-                |> List.reduce (fun a b -> sprintf "%s, %s" a b)
-            |> sprintf "[%s]"
+                |> Seq.map (fun l -> l.ToString())
+                |> Seq.reduce (fun a b -> sprintf "%s, %s" a b)
+                |> sprintf "[%s]"
+            else
+                ""
 
     member this.ToFloat() =
         match this with
@@ -44,7 +46,10 @@ type Value =
         match this with
         | ListValue v -> v
         | VoidValue _ -> invalidArg "val" "cannot convert void to list"
-        | v -> v |> List.singleton
+        | v ->
+            let res = new List<Value>()
+            res.Add(v)
+            res
 
 // type ErrorType =
 //     | Evaluation
@@ -52,7 +57,9 @@ type Value =
 
 // type RunError = { Message: string; Type: ErrorType }
 
-type EvalStopped = EvalError of RunError | ReturnStmtReached of Value
+type EvalStopped =
+    | EvalError of RunError
+    | ReturnStmtReached of Value
 
 // module Errors =
 //     let create errorType str = { Message = str; Type = errorType }
@@ -68,15 +75,15 @@ module Value =
         res
         |> Result.map (fun vl -> vl |> (List.tryLast >> (Option.defaultValue Void)))
 
-    /// Changes returnstmtreached error result to actual Ok returned value 
-    let getReturnedValue (res: Result<Value, EvalStopped>) =       
-       
-        res |> Result.bindError
-            (fun e ->
-                match e with
-                | ReturnStmtReached value -> value  |> Ok
-                | EvalError e -> e |> EvalError |> Error)
-        
+    /// Changes returnstmtreached error result to actual Ok returned value
+    let getReturnedValue (res: Result<Value, EvalStopped>) =
+
+        res
+        |> Result.bindError (fun e ->
+            match e with
+            | ReturnStmtReached value -> value |> Ok
+            | EvalError e -> e |> EvalError |> Error)
+
     let toFloat (v: Value) = v.ToFloat()
     let toBool (v: Value) = v.ToBool()
     let toStr (v: Value) = v.ToString()
@@ -145,7 +152,7 @@ module Value =
         |> Result.Ok
 
     let (+) v1 v2 =
-        computeArithmetic (+) (+) (Some(+)) (Some List.append) v1 v2
+        computeArithmetic (+) (+) (Some(+)) (Some (fun l1 l2 -> l1.Union(l2).ToList())) v1 v2
 
     let (-) v1 v2 =
         computeArithmetic (-) (-) None None v1 v2

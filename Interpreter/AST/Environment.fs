@@ -94,13 +94,13 @@ module Environment =
 
     let tryGetVarValue (environment: ExecutionEnvironment) identifier =
         if environment.VariablesCache.ContainsKey(identifier) then
-            environment.VariablesCache.[identifier].Value |> Ok
+            environment.VariablesCache.[identifier] |> Ok
         else            
             monad' {
                 let! targetEnvironment = tryFindVariableEnvironment environment identifier
                 let found = targetEnvironment.Variables.[identifier]
                 environment.VariablesCache.Add(identifier,found)
-                return found.Value
+                return found
             }
             |> Option.toResultWith (
                 Errors.create
