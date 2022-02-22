@@ -57,9 +57,9 @@ module Run =
     let ``arrays of arrays are read correctly by index`` (value: int) =
         let str =
             $"
-                var z = [{value}];
-                var v = [z];
-                v[0][0];
+                var z = [1,{value}];
+                var v = [[9],z];
+                v[1][1];
             "
 
         let actual = Interpreter.Runner.run str
@@ -80,3 +80,16 @@ module Run =
         let expected = value.ToString().[0].ToString() |> StringValue |> Ok
 
         actual .=. expected
+    [<Property>]
+    let ``arrays of arays initialization works correctly`` (value: PositiveInt) =
+        let str =
+            $"
+                var v = [[{value}]];                                
+            "
+
+        let actual = Interpreter.Runner.run str
+
+        let expected = Value.Void |> Ok
+
+        actual .=. expected
+    

@@ -66,7 +66,12 @@ let main argv =
                 }
                 //return false;
         }
-            aa(10);
+        var zz = 5;
+        var zzz = zz = 10;
+        println (zz);
+        println (zzz);
+
+            //aa(10);
         //println(silnia(3));
         //println(foo([1,2,5,-9,7]));
        // var str = \"kwakwa\";
@@ -87,6 +92,6 @@ let main argv =
       //  var    z = [0];
        // z[0]++;
        "
-    Interpreter.Runner.run str
+    Interpreter.Runner.run str |> ignore
     Console.ReadLine() |> ignore
     0 

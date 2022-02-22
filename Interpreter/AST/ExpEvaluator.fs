@@ -82,6 +82,22 @@ module ExpEvaluator =
                  "Left operand of assignment expression must be LValue"
                  |> (Errors.createResult Other))
             |> Result.mapError EvalError
+        
+
+        // let rec assignmentEvaluatorRec mutableExpr expr = 
+        //    match mutableExpr with
+        //    | Var identifier ->             
+        //         (tryEvaluateRec expr,varEvaluator identifier |> Result.mapError EvalError)
+        //    | IndexedVar(m, index) -> 
+        //         let res = assignmentEvaluatorRec m expr
+        //         monad' {                   
+        //             let! newValue = (fst res)
+        //             let! target = snd res
+
+        //             match (newValue) with
+        //                 | ListValue lv -> ()
+        //         }
+
 
         let assignmentEvaluator mutableExpr expr =
             match mutableExpr with
