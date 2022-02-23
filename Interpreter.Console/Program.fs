@@ -66,13 +66,20 @@ let main argv =
                 }
                 //return false;
         }
-        var zz = 5;
-        var zzz = zz = 10;
-        println (zz);
-        println (zzz);
+        var v = [1,2,3];
+       // v[1] = 9;
+        println(v[0]);
+        //var i = 5;
+        //i = 10;
+        //println(i);
+
+        //var zz = 5;
+        //var zzz = zz = 10;
+        //println (zz);
+        //println (zzz);
 
             //aa(10);
-        println(silnia(3));
+        //println(silnia(3));
         //println(foo([1,2,5,-9,7]));
        // var str = \"kwakwa\";
        // var n = 3;

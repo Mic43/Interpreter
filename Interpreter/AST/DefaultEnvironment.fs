@@ -31,7 +31,7 @@ module DefaultEnvironment =
     let tryGetLen (parametersList: Value list) =
         match parametersList with
         | [ StringValue v ] -> v.Length |> IntValue |> Result.Ok
-        | [ ListValue v ] -> v.Count |> IntValue |> Result.Ok
+        | [ ListValue v ] -> v.Length |> IntValue |> Result.Ok
         | [ _ ] -> Errors.createResult ErrorType.Other "error getting len of the variable"
         | _ ->
             "Wrong parameter count"

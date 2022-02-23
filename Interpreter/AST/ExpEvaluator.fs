@@ -106,11 +106,11 @@ module ExpEvaluator =
             | IndexedVar (ident, exp) ->
                 monad' {
                     let! index = exp |> tryEvaluateRec
-                    let! value = (mutableExpEvaluator ident)
+                    let! value = mutableExpEvaluator ident
 
                     return!
                         match (value.Value, index) with //TODO: .[index] handle error!
-                        | (ListValue lv, IntValue index) -> ref lv.[index] |> Ok
+                        | (ListValue lv, IntValue index) ->  lv.[index] |> Ok
                         | (StringValue s, IntValue index) -> ref (s.[index] |> string |> StringValue) |> Ok
                         | _ ->
                             "indexing expression must evaluate to int"
@@ -183,9 +183,9 @@ module ExpEvaluator =
                 |> Utils.traverseM tryEvaluateRec
 
             parametersValues
-            |> Result.bind (fun v -> v |> funEvaluator fc.Name)
+            |> Result.bind  (fun v -> v |> funEvaluator fc.Name)
         | Increment (op, exp) -> incrementEvaluator op exp
         | ListCreation (expList) ->
             expList
             |> (Utils.traverseM tryEvaluateRec)
-            |> Result.map (fun l -> l.ToList() |> ListValue)
+            |> Result.map (fun l -> l |> List.map (fun i -> ref i) |> ListValue)

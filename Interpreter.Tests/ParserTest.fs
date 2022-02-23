@@ -1,5 +1,3 @@
-
-
 module ParserTests
 
 open Xunit
@@ -70,37 +68,45 @@ module Run =
         let expected = value |> IntValue |> Ok
 
         actual .=. expected
+
     [<Property>]
     let ``arrays of strings are read correctly by index`` (value: PositiveInt) =
         let str =
             $"
-                var v = [\"{value}\"];                
+                var v = [\"{value}\"];
                 v[0][0];
             "
 
         let actual = Interpreter.Runner.run str
 
-        let expected = value.ToString().[0].ToString() |> StringValue |> Ok
+        let expected =
+            value.ToString().[0].ToString()
+            |> StringValue
+            |> Ok
 
         actual .=. expected
+
     [<Property>]
     let ``arrays of arays initialization works correctly`` (value: PositiveInt) =
         let str =
             $"
-                var v = [[{value}]];                                
+                var v = [[{value}]];
+                v[0][0];
             "
 
         let actual = Interpreter.Runner.run str
 
-        let expected = Value.Void |> Ok
+        let expected = value.Get |> IntValue |> Ok
 
         actual .=. expected
+
     [<Property>]
     let ``simple variable assignment works correctly`` (before: int) (after: int) =
         let str =
             $"
-                var v = {before};                                
-                v = {after};                
+                var v = {before};
+                v = {after};
+                v;
             "
 
         let actual = Interpreter.Runner.run str
@@ -108,21 +114,44 @@ module Run =
         let expected = after |> IntValue |> Ok
 
         actual .=. expected
-    
-    [<Property>]
-    let ``simple 1D array assignment by index works correctly``(after: int) =
-        
-        let inBounds = Gen.elements [0..2] |> Arb.fromGen
 
-        Prop.forAll inBounds (fun index ->  
-        let str =
-            $"
-                var v = [1,2,3];                                
-                v[{index}] = {after};                
+    [<Property>]
+    let ``simple 1D array assignment by index works correctly`` (after: int) =
+
+        let inBounds = Gen.elements [ 0 .. 2 ] |> Arb.fromGen
+
+        Prop.forAll inBounds (fun index ->
+            let str =
+                $"
+                var v = [1,2,3];
+                v[{index}] = {after};
+                v[{index}];
             "
 
-        let actual = Interpreter.Runner.run str
+            let actual = Interpreter.Runner.run str
 
-        let expected = after |> IntValue |> Ok
+            let expected = after |> IntValue |> Ok
 
-        actual .=. expected)
+            actual .=. expected)
+    [<Property>]
+    let ``simple 2D array assignment by index works correctly`` (after: int) =   
+        let gen = Gen.elements [ 0 .. 2 ]
+
+        gen
+        |> Gen.apply (gen |> Gen.map (fun a b -> (a, b)))
+        |> Arb.fromGen
+        |> Prop.forAll
+        <| (fun (i1, i2) ->
+            let str =
+                $"
+                var v = [[1,2,3],[1,2,3],[1,2,3]];
+                v[{i1}][{i2}] = {after};
+                v[{i1}][{i2}];
+            "
+
+            let actual = Interpreter.Runner.run str
+
+            let expected = after |> IntValue |> Ok
+
+            actual .=. expected)
+   

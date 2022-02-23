@@ -3,6 +3,7 @@ namespace Interpreter.AST
 open FSharpPlus
 open System.Collections.Generic
 open System.Linq
+open FSharpPlus
 
 type Value =
     | IntValue of int
@@ -10,7 +11,7 @@ type Value =
     | BoolValue of bool
     | StringValue of string
     | VoidValue of unit
-    | ListValue of List<Value>
+    | ListValue of Ref<Value> list
 
     member this.ToBool() =
         match this with
@@ -27,7 +28,7 @@ type Value =
         | BoolValue (b) -> sprintf "%b" b
         | StringValue (s) -> s
         | ListValue lv ->
-            if lv.Count = 0 then
+            if lv.Length = 0 then
                 lv
                 |> Seq.map (fun l -> l.ToString())
                 |> Seq.reduce (fun a b -> sprintf "%s, %s" a b)
@@ -46,10 +47,8 @@ type Value =
         match this with
         | ListValue v -> v
         | VoidValue _ -> invalidArg "val" "cannot convert void to list"
-        | v ->
-            let res = new List<Value>()
-            res.Add(v)
-            res
+        | v ->            
+            ref v |> List.singleton         
 
 // type ErrorType =
 //     | Evaluation
@@ -152,7 +151,7 @@ module Value =
         |> Result.Ok
 
     let (+) v1 v2 =
-        computeArithmetic (+) (+) (Some(+)) (Some (fun l1 l2 -> l1.Union(l2).ToList())) v1 v2
+        computeArithmetic (+) (+) (Some(+)) (Some List.append) v1 v2
 
     let (-) v1 v2 =
         computeArithmetic (-) (-) None None v1 v2
