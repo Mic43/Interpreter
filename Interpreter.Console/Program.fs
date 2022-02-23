@@ -57,18 +57,22 @@ let main argv =
         }
         fun foo(array)
         {
-              for(var i=0;i<len(array) -1;++i)
+              for(var i=0;i<len(array);++i)
                 {
                     print(array[i] + \" \");
-                    if(array[i + 1] < 0)
-                        return ;
+                    if(array[i] < 0)
+                        return true;
 
                 }
-                //return false;
+                return false;
+                println(\"xx\");
         }
-        var v = [1,2,3];
+        var v = [1,2,-4];
+
+        println(foo(v));
+
        // v[1] = 9;
-        println(v[0]);
+        //println(v[0]);
         //var i = 5;
         //i = 10;
         //println(i);

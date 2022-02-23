@@ -35,7 +35,7 @@ type Value =
                 |> sprintf "[%s]"
             else
                 ""
-
+        
     member this.ToFloat() =
         match this with
         | IntValue v -> v |> float
@@ -50,19 +50,9 @@ type Value =
         | v ->            
             ref v |> List.singleton         
 
-// type ErrorType =
-//     | Evaluation
-//     | Other
-
-// type RunError = { Message: string; Type: ErrorType }
-
 type EvalStopped =
     | EvalError of RunError
     | ReturnStmtReached of Value
-
-// module Errors =
-//     let create errorType str = { Message = str; Type = errorType }
-//     let createResult errorType str = (create errorType str) |> Result.Error
 
 module Value =
     let Void = () |> VoidValue

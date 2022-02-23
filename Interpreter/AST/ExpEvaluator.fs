@@ -75,13 +75,23 @@ module ExpEvaluator =
                     let! value = mutableExpEvaluator ident
 
                     return!
-                        match (value.Value, index) with //TODO: .[index] handle error!
-                        | (ListValue lv, IntValue index) -> lv.[index] |> Ok
-                        | (StringValue s, IntValue index) -> ref (s.[index] |> string |> StringValue) |> Ok
+                        match (value.Value, index) with
+                        | (ListValue lv, IntValue index) ->
+                            if index < lv.Length then
+                                lv.[index] |> Ok
+                            else
+                                $"array index out of bounds: {index}"
+                                |> Errors.createResult Other
+                        | (StringValue s, IntValue index) ->
+                            if index < s.Length then
+                                ref (s.[index] |> string |> StringValue) |> Ok
+                            else
+                                $"string index out of bounds: {index}"
+                                |> Errors.createResult Other
                         | _ ->
                             "indexing expression must evaluate to int"
                             |> Errors.createResult Other
-                            |> Result.mapError EvalError
+                        |> Result.mapError EvalError
                 }
 
         let assignmentEvaluator mutableExpr expr =
