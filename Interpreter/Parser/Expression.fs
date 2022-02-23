@@ -11,21 +11,7 @@ open FSharpPlus.Control.TryBlock
 
 module Expression =
     let pConst = pValue |>> Constant
-
-    //TODO: not efficent, pIdentifier is common to both cases
-    // let pVar pExpr =
-    //     let rec pVarRec pExpr =
-    //         (pIdentifier |>> (Var))
-
-    //         <|> attempt (
-    //             pipe2
-    //                 (pVarRec pExpr .>> (openSquareBracket |> trimmed))
-    //                 (pExpr .>> (closeSquareBracket |> trimmed))
-    //                 (fun ident exp -> (ident, exp) |> IndexedVar)
-    //         )
-
-
-    //     pVarRec pExpr |>> Mutable
+      
 
     let pVar (pExpr: Parser<Expression, unit>) =
         pipe2
@@ -43,9 +29,7 @@ module Expression =
     let pExpList pExpr =
         sepBy (spaces >>. pExpr .>> spaces) pListSeparator
 
-    let pfunCall pExpr =
-        //spaces
-        //>>.
+    let pfunCall pExpr =       
         (pipe2
             (pIdentifier .>> spaces)
             (openBracket >>. spaces >>. (pExpList pExpr)

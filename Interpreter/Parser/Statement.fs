@@ -110,7 +110,7 @@ module Statement =
         <!> "block"
 
 
-    let pScopedStatement block blockImpl =
+    let pScopedStatement block (blockImpl: Parser<Block,unit> ref) =
         let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()
 
         let forStmt, forStmtImp =
@@ -137,10 +137,10 @@ module Statement =
              <|> blockStmt)
             .>> spaces
 
-        do blockImpl := pBlock scopedStatement
-        do ifStmtImp := pIfStmt scopedStatement
-        do forStmtImp := pForStmt scopedStatement
-        do whileStmtImp := pWhileStmt scopedStatement
+        blockImpl.Value <- pBlock scopedStatement
+        ifStmtImp.Value <- pIfStmt scopedStatement
+        forStmtImp.Value <- pForStmt scopedStatement
+        whileStmtImp.Value <- pWhileStmt scopedStatement
 
         scopedStatement
 

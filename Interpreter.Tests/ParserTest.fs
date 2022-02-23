@@ -133,6 +133,7 @@ module Run =
             let expected = after |> IntValue |> Ok
 
             actual .=. expected)
+    
     [<Property>]
     let ``simple 2D array assignment by index works correctly`` (after: int) =   
         let gen = Gen.elements [ 0 .. 2 ]
@@ -141,7 +142,7 @@ module Run =
         |> Gen.apply (gen |> Gen.map (fun a b -> (a, b)))
         |> Arb.fromGen
         |> Prop.forAll
-        <| (fun (i1, i2) ->
+        <| fun (i1, i2) ->
             let str =
                 $"
                 var v = [[1,2,3],[1,2,3],[1,2,3]];
@@ -153,5 +154,44 @@ module Run =
 
             let expected = after |> IntValue |> Ok
 
-            actual .=. expected)
-   
+            actual .=. expected
+
+    [<Property>]
+    let ``mutliple assignment works correctly for ints`` (before: int) (after: int) = 
+        let str =
+            $"
+            var z = {before};
+            var v = z = {after};
+            [z,v];
+        "
+        let actual = Interpreter.Runner.run str
+
+        let expected = [after |> IntValue;after |> IntValue] |> List.map (fun v -> ref v) |> ListValue |> Ok
+
+        actual .=. expected
+
+    [<Property>]
+    let ``preincremenation of array element works correctly`` (before: int)  = 
+        let str =
+            $"
+            var z = [5,{before}];
+            [++z[1],z[1]];            
+        "
+        let actual = Interpreter.Runner.run str
+        let after = before + 1
+        let expected = [after |> IntValue;after |> IntValue] |> List.map (fun v -> ref v) |> ListValue |> Ok
+
+        actual .=. expected
+    [<Property>]
+    let ``postincremenation of array element works correctly`` (before: int)  = 
+        let str =
+            $"
+            var z = [{before}];
+            [z[0]++,z[0]];            
+        "
+        let actual = Interpreter.Runner.run str
+        let after = before + 1
+        let expected = [before |> IntValue;after |> IntValue] |> List.map (fun v -> ref v) |> ListValue |> Ok
+
+        actual .=. expected
+
