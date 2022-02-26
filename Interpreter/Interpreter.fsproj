@@ -5,8 +5,8 @@
   <ItemGroup>
     <Compile Include="AST\Utils.fs" />
     <Compile Include="AST\Errors.fs" />
-    <Compile Include="AST\Value.fs" />
     <Compile Include="AST\Identifier.fs" />
+    <Compile Include="AST\Value.fs" />
     <Compile Include="AST\Expression.fs" />
     <Compile Include="AST\Statement.fs" />
     <Compile Include="AST\DefaultEnvironment.fs" />

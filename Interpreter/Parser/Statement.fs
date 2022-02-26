@@ -19,21 +19,19 @@ module Statement =
         funKeyword
         >>. spaces
         >>. pipe3
-                (pIdentifier .>> spaces .>> openBracket)
-                (spaces >>. pIdentList .>> spaces .>> closeBracket)
-                (spaces >>. pBlock .>> spaces)
-                (fun name parametrs body ->
-                    { Name = name
-                      Body = body
-                      Parameters = parametrs })
+            (pIdentifier .>> spaces .>> openBracket)
+            (spaces >>. pIdentList .>> spaces .>> closeBracket)
+            (spaces >>. pBlock .>> spaces)
+            (fun name parametrs body ->
+                { Name = name
+                  Body = body
+                  Parameters = parametrs })
 
     let pVarDecl =
         pipe2
-            (varKeyword >>. spaces1 >>. pIdentifier
-             .>> spaces
-             .>> initVarOpKeyWord
-             .>> spaces)
-            (pExpr .>> spaces .>> pSemicolon)
+            (varKeyword >>. spaces1 >>. pIdentifier .>> spaces)
+            (initVarOpKeyWord >>. spaces >>. pExpr |> opt .>> spaces .>> pSemicolon)
+
             (fun ident exp ->
                 { VarDeclaration.Name = ident
                   InitExpression = exp })
@@ -110,7 +108,7 @@ module Statement =
         <!> "block"
 
 
-    let pScopedStatement block (blockImpl: Parser<Block,unit> ref) =
+    let pScopedStatement block (blockImpl: Parser<Block, unit> ref) =
         let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()
 
         let forStmt, forStmtImp =

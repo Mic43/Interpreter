@@ -52,7 +52,7 @@ let main argv =
         fun printTab(array)
         {
             println(global);
-            for(var i=0;i<len(array);++i)                            
+            for(var i;i<len(array);++i)                            
                 print(\" \" + array[i] + \" \");      
         }
         fun foo(array)
@@ -68,9 +68,9 @@ let main argv =
                 println(\"xx\");
         }
         var v = [1,2,-4];
-
+                        
         println(foo(v));
-
+        printTab(v);
        // v[1] = 9;
         //println(v[0]);
         //var i = 5;
@@ -103,6 +103,15 @@ let main argv =
       //  var    z = [0];
        // z[0]++;
        "
+    let v = 5
+    let z = ref v |> List.singleton
+
+    printfn "%A" z.[0]
+    
+    z.[0].Value <- 6
+
+    printfn "%A" z.[0]
+    
     Interpreter.Runner.run str |> ignore
     Console.ReadLine() |> ignore
     0 

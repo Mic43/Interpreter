@@ -47,7 +47,7 @@ let blockize maxLevel statements =
 
     blockizeRec maxLevel 0 statements
 
-module Run =
+module Variables =
 
     [<Property>]
     let ``There can be only one function with specific name``
@@ -93,17 +93,14 @@ module Run =
         (repeatsCount: PositiveInt)
         =
 
-        let varIdent = Identifier.create (varName |> string)
+      //  let varIdent = Identifier.create (varName |> string)
 
-        let vDecl =
-            { Name = varIdent
-              InitExpression = varInit |> Constant }
+        let vDecl = Statement.varDeclare (varName |> string) (varInit |> Constant)
+            // { Name = varIdent
+            //   InitExpression = varInit |> Constant }
 
         let program =
-            (fun _ ->
-                vDecl
-                |> VarDeclarationStatement
-                |> ScopedStatement)
+            (fun _ -> vDecl)
             |> List.init (repeatsCount.Get + 1)
             |> Program
 
@@ -121,10 +118,10 @@ module Run =
         =
 
         let varIdent = Identifier.create (varName.Get)
-
+            
         let vDecl =
             { Name = varIdent
-              InitExpression = varInit |> Constant }
+              InitExpression = varInit |> Constant |> Some}
             |> VarDeclarationStatement
 
         let blockize maxLevel statement =
@@ -157,7 +154,7 @@ module Run =
 
         let vDecl =
             { Name = varIdent
-              InitExpression = varInit |> Constant }
+              InitExpression = varInit |> Constant |> Some}
             |> VarDeclarationStatement
 
         let program =
@@ -181,7 +178,7 @@ module Run =
 
         let vDecl =
             { Name = varIdent
-              InitExpression = varInit |> Constant }
+              InitExpression = varInit |> Constant |> Some }
             |> VarDeclarationStatement
 
         let varUsage =
@@ -207,11 +204,11 @@ module Run =
 
         let varIdent = Identifier.create (varName.Get)
 
-        let vDecl =
-            { Name = varIdent
-              InitExpression = Expression.intConstant varInit }
-            |> VarDeclarationStatement
-            |> ScopedStatement
+        let vDecl = Statement.varDeclare varName.Get (Expression.intConstant varInit)
+            // { Name = varIdent
+            //   InitExpression = Expression.intConstant varInit }
+            // |> VarDeclarationStatement
+            // |> ScopedStatement
 
         let rec varAssignment curNestCount maxNestCount =
             if curNestCount = maxNestCount then
@@ -240,7 +237,7 @@ module Run =
 
         let vDecl =
             { Name = iVar
-              InitExpression = Expression.intConstant init }
+              InitExpression = Expression.intConstant init |> Some}
             |> VarDeclarationStatement
 
         let whileStmt =

@@ -52,7 +52,7 @@ module Printer =
             sprintf
                 "%s = %s"
                 (vd.Name |> Identifier.toStr)
-                (vd.InitExpression
+                (vd.InitExpression |> Option.defaultValue (Expression.voidConstant())
                  |> ExpressionStatement
                  |> scopedStmtToStr)
         | BlockStatement block ->

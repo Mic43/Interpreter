@@ -5,7 +5,7 @@ open FSharpPlus
 
 type VarDeclaration =
     { Name: Identifier
-      InitExpression: Expression }
+      InitExpression: Expression option }
 
 type ForInitializer =
     | ExpressionInit of Expression
@@ -65,19 +65,47 @@ type Callable =
     static member FromFunction name f =
         { Name = name; Execute = f } |> CompiledFunction
 
+type Member = | Field of VarDeclaration
+//  | NestedType of UserType
+
+and Struct = { Members: Map<Identifier, Member> }
+
+and UserTypeKind = Struct of Struct
+
+and UserType =
+    { Name: Identifier
+      // Id:Guid
+      Kind: UserTypeKind }
+
 type Statement =
     | FunDeclaration of Function
+    | UserTypeDeclaration of UserType
     | ScopedStatement of ScopedStatement
     static member FromExpression(exp: Expression) =
         exp |> ExpressionStatement |> ScopedStatement
 
-type Program = Program of Statement list
-    with static member Of statements = statements |> Program
+type Program =
+    | Program of Statement list
+    static member Of statements = statements |> Program
 
 module Statement =
+    let structDeclare name (members: Map<string, Expression option>) =
+        { Name = name |> Identifier
+          Kind =
+            { Members =
+                members
+                |> Map.toList
+                |> List.map (fun (k, v) ->
+                    (k |> Identifier.create,
+                     { Name = k |> Identifier.create
+                       InitExpression = v }
+                     |> Field))
+                |> Map.ofList }
+            |> Struct }
+
     let varDeclare name initExp =
         { Name = name |> Identifier.create
-          InitExpression = initExp }
+          InitExpression = initExp |> Some }
         |> VarDeclarationStatement
         |> ScopedStatement
 

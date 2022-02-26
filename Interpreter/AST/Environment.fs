@@ -5,7 +5,8 @@ open Interpreter.AST
 open FSharpPlus
 
 type Global =
-    { Functions: IDictionary<Identifier, Callable> }
+    { Functions: IDictionary<Identifier, Callable>
+      UserTypes: Dictionary<Identifier, UserType> }
 
 type Scoped = { Parent: Environment }
 
@@ -18,7 +19,10 @@ and Environment =
       Kind: EnvironmentKind }
     static member CreateGlobal(functions: IDictionary<Identifier, Callable>) =
         { Variables = new Dictionary<Identifier, Ref<Value>>()
-          Kind = { Functions = functions } |> Global }
+          Kind =
+            { Functions = functions
+              UserTypes = new Dictionary<Identifier, UserType>() }
+            |> Global }
 
 type ExecutionEnvironment =
     private
@@ -37,7 +41,8 @@ module Environment =
     let private createEmptyGlobal () =
         { Variables = new Dictionary<Identifier, Ref<Value>>()
           Kind =
-            { Functions = new Dictionary<Identifier, Callable>() }
+            { Functions = new Dictionary<Identifier, Callable>()
+              UserTypes = new Dictionary<Identifier, UserType>() }
             |> Global }
 
     let create defaultGlobal =
@@ -71,18 +76,42 @@ module Environment =
 
         recurse environment.CurrentEnvironment
 
-    let tryUpdateVar (environment: ExecutionEnvironment) identifier newValue =
-        monad' {
-            let! targetEnvironment = tryFindVariableEnvironment environment identifier
-            targetEnvironment.Variables.[identifier].Value <- newValue
-            return ()
-        }
-        |> Option.toResultWith (
-            Errors.create
-                ErrorType.Other
-                (identifier.ToStr()
-                 |> sprintf "variable not defined: %s")
-        )
+    // let tryUpdateVar (environment: ExecutionEnvironment) identifier newValue =
+    //     monad' {
+    //         let! targetEnvironment = tryFindVariableEnvironment environment identifier
+    //         targetEnvironment.Variables.[identifier].Value <- newValue
+    //         return ()
+    //     }
+    //     |> Option.toResultWith (
+    //         Errors.create
+    //             ErrorType.Other
+    //             (identifier.ToStr()
+    //              |> sprintf "variable not defined: %s")
+    //     )
+    let tryGetUserType (environment: ExecutionEnvironment) identifier =
+        match environment.Global.Kind with
+        | Global g ->
+            if g.UserTypes.ContainsKey(identifier) then
+                g.UserTypes.[identifier] |> Ok
+            else
+                ($"Type is not defined {identifier}"
+                 |> Errors.createResult Other)
+        | Scoped (_) -> failwith "Internal error, enironment.Global kind must be of Global type"
+
+    let tryDefineUserType (environment: ExecutionEnvironment) userType =
+        let message =
+            userType.Name
+            |> Identifier.toStr
+            |> sprintf "Struct %s already defined"
+
+        match environment.Global.Kind with
+        | Global g ->
+            (g.UserTypes.TryAdd(userType.Name, userType), ())
+            |> Option.ofPair
+            |> (message
+                |> (Errors.create Other >> Option.toResultWith))
+            |> Result.map Value.createVoid
+        | Scoped (_) -> failwith "Cannot define struct inside local scope"
 
     let tryDefineVar (environment: ExecutionEnvironment) identifier value =
         if environment.Current.Variables.ContainsKey identifier then
@@ -95,11 +124,11 @@ module Environment =
     let tryGetVarValue (environment: ExecutionEnvironment) identifier =
         if environment.VariablesCache.ContainsKey(identifier) then
             environment.VariablesCache.[identifier] |> Ok
-        else            
+        else
             monad' {
                 let! targetEnvironment = tryFindVariableEnvironment environment identifier
                 let found = targetEnvironment.Variables.[identifier]
-                environment.VariablesCache.Add(identifier,found)
+                environment.VariablesCache.Add(identifier, found)
                 return found
             }
             |> Option.toResultWith (

@@ -2,17 +2,16 @@ module ParserTests
 
 open Xunit
 open Interpreter.AST
+open Interpreter.AST.Errors
 open FsCheck
 open FsCheck.Xunit
 open FSharpPlus
 open FSharpPlus.Data
-open Interpreter.AST
-
 
 let (.=.) left right =
     left = right |@ sprintf "%A = %A" left right
 
-module Run =
+module Variables =
     [<Property>]
     let ``unindexed variables are read correctly`` (value: int) =
         let str =
@@ -194,4 +193,33 @@ module Run =
         let expected = [before |> IntValue;after |> IntValue] |> List.map (fun v -> ref v) |> ListValue |> Ok
 
         actual .=. expected
+
+    [<Property>]
+    let ``uninitialized variable is set to void``()  = 
+        let str =
+            $"
+            var z;
+            z;            
+        "
+        let actual = Interpreter.Runner.run str
+        
+        let expected = Value.Void |> Ok
+
+        actual .=. expected
+    
+[<Property>]
+let ``accessing array with index equal to array len causes error``(l: NonEmptyList<int> )  = 
+    let listStr = l |> NonEmptyList.map string |> NonEmptyList.reduce  (fun s v -> $"{s},{v}")
+    let str =
+        $"
+        var z = [{listStr}];
+        z[ {l.Length} ];            
+    "
+    let actual = Interpreter.Runner.run str
+      
+    match actual with
+        | Ok (_) -> false
+        | Error(re) -> match re with 
+                                | Interpreter.RunError _ -> true
+                                | _ -> false
 

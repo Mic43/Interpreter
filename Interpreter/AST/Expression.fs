@@ -36,7 +36,6 @@ type MutableExpression =
     | IndexedVar of (MutableExpression * Expression)
 
 and Expression =
-    
     | Binary of
         {| BinaryOp: BinaryOp
            LeftOperand: Expression
@@ -45,9 +44,14 @@ and Expression =
     | Increment of IncrementOp * Expression
     | Assignment of Expression * Expression
     | ListCreation of Expression list
+    | UserTypeCreation of StructCreationExpression
     | FunCall of FunCall
     | Mutable of MutableExpression
     | Constant of Value
+
+and StructCreationExpression =
+    { StructName: Identifier
+      FieldsInitialization: Map<Identifier, Expression> }
 
 and FunCall =
     { Name: Identifier
@@ -55,8 +59,8 @@ and FunCall =
 
 module Expression =
     let var identifier =
-        identifier |> Identifier.create |> Var |> Mutable    
-     
+        identifier |> Identifier.create |> Var |> Mutable
+
     let funCall identifier parameters =
         { Name = identifier
           ActualParameters = parameters }

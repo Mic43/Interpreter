@@ -5,13 +5,18 @@ open System.Collections.Generic
 open System.Linq
 open FSharpPlus
 
-type Value =
+type StructValue =
+    { Name: Identifier
+      Fields: Map<Identifier, Ref<Value>> }
+
+and Value =
     | IntValue of int
     | FloatValue of float
     | BoolValue of bool
     | StringValue of string
     | VoidValue of unit
     | ListValue of Ref<Value> list
+    | StructValue of StructValue
 
     member this.ToBool() =
         match this with
@@ -28,14 +33,15 @@ type Value =
         | BoolValue (b) -> sprintf "%b" b
         | StringValue (s) -> s
         | ListValue lv ->
-            if lv.Length = 0 then
+            if lv.Length <> 0 then
                 lv
                 |> Seq.map (fun l -> l.ToString())
                 |> Seq.reduce (fun a b -> sprintf "%s, %s" a b)
                 |> sprintf "[%s]"
             else
                 ""
-        
+        | StructValue (sv) -> $"{sv.Name} {sv.Fields}"
+
     member this.ToFloat() =
         match this with
         | IntValue v -> v |> float
@@ -47,8 +53,7 @@ type Value =
         match this with
         | ListValue v -> v
         | VoidValue _ -> invalidArg "val" "cannot convert void to list"
-        | v ->            
-            ref v |> List.singleton         
+        | v -> ref v |> List.singleton
 
 type EvalStopped =
     | EvalError of RunError
@@ -98,7 +103,7 @@ module Value =
                 let! resultConvList = resultConvList
 
                 return
-                    (opList (v1.ToList()) (v2.ToList()))
+                    opList (v1.ToList()) (v2.ToList())
                     |> resultConvList
             }
             |> Option.toResultWith (
@@ -112,7 +117,7 @@ module Value =
                 let! resultConvString = resultConvString
 
                 return
-                    (opString (toStr v1) (toStr v2))
+                    opString (toStr v1) (toStr v2)
                     |> resultConvString
             }
             |> Option.toResultWith (
@@ -125,7 +130,7 @@ module Value =
             "cannot convert void to float"
             |> (Errors.createResult Other)
         | (_, _) ->
-            (opFloat (v1 |> toFloat) (v2 |> toFloat))
+            opFloat (v1 |> toFloat) (v2 |> toFloat)
             |> resultConvFloat
             |> Ok
 
@@ -136,7 +141,7 @@ module Value =
         compute BoolValue BoolValue (Some BoolValue) (Some BoolValue) opFloat opInt opString opList v1 v2
 
     let private computeLogical operatorFun (v1: Value) (v2: Value) =
-        (operatorFun (v1.ToBool()) (v2.ToBool()))
+        operatorFun (v1.ToBool()) (v2.ToBool())
         |> BoolValue
         |> Result.Ok
 
