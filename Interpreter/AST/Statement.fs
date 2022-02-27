@@ -101,7 +101,7 @@ module Statement =
                        InitExpression = v }
                      |> Field))
                 |> Map.ofList }
-            |> Struct }
+            |> Struct } |> UserTypeDeclaration
 
     let varDeclare name initExp =
         { Name = name |> Identifier.create

@@ -50,7 +50,7 @@ and Expression =
     | Constant of Value
 
 and StructCreationExpression =
-    { StructName: Identifier
+    { StructTypeName: Identifier
       FieldsInitialization: Map<Identifier, Expression> }
 
 and FunCall =
@@ -69,6 +69,11 @@ module Expression =
     let floatConstant value = value |> FloatValue |> Constant
     let intConstant value = value |> IntValue |> Constant
     let voidConstant () = Value.Void |> Constant
+
+    let structInitialize structTypeName fieldsInitializers =
+        { StructCreationExpression.StructTypeName = structTypeName |> Identifier.create
+          FieldsInitialization = fieldsInitializers }
+        |> UserTypeCreation
 
     let assignment (identifier: Identifier) exp =
         (identifier |> Var |> Mutable, exp) |> Assignment

@@ -6,7 +6,7 @@ open System.Linq
 open FSharpPlus
 
 type StructValue =
-    { Name: Identifier
+    { TypeName: Identifier
       Fields: Map<Identifier, Ref<Value>> }
 
 and Value =
@@ -40,7 +40,7 @@ and Value =
                 |> sprintf "[%s]"
             else
                 ""
-        | StructValue (sv) -> $"{sv.Name} {sv.Fields}"
+        | StructValue (sv) -> $"{sv.TypeName} {sv.Fields}"
 
     member this.ToFloat() =
         match this with

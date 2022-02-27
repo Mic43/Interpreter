@@ -207,19 +207,19 @@ module Variables =
 
         actual .=. expected
     
-[<Property>]
-let ``accessing array with index equal to array len causes error``(l: NonEmptyList<int> )  = 
-    let listStr = l |> NonEmptyList.map string |> NonEmptyList.reduce  (fun s v -> $"{s},{v}")
-    let str =
-        $"
-        var z = [{listStr}];
-        z[ {l.Length} ];            
-    "
-    let actual = Interpreter.Runner.run str
+    [<Property>]
+    let ``accessing array with index equal to array len causes error``(l: NonEmptyList<int> )  = 
+        let listStr = l |> NonEmptyList.map string |> NonEmptyList.reduce  (fun s v -> $"{s},{v}")
+        let str =
+            $"
+            var z = [{listStr}];
+            z[ {l.Length} ];            
+        "
+        let actual = Interpreter.Runner.run str
       
-    match actual with
-        | Ok (_) -> false
-        | Error(re) -> match re with 
-                                | Interpreter.RunError _ -> true
-                                | _ -> false
+        match actual with
+            | Ok (_) -> false
+            | Error(re) -> match re with 
+                                    | Interpreter.RunError _ -> true
+                                    | _ -> false
 

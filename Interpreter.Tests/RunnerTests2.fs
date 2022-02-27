@@ -22,8 +22,8 @@ let idFuncProgram inputVal =
         { Name = funIdent
           Parameters = [ varIdent ]
           Body =
-              [ varIdent |> Var |> Mutable |> ReturnStatement ]
-              |> Block.Create }
+            [ varIdent |> Var |> Mutable |> ReturnStatement ]
+            |> Block.Create }
 
     [ idFunDecl |> FunDeclaration
       { Name = funIdent
@@ -67,8 +67,8 @@ module Variables =
             { Name = funIdent
               Parameters = [ varIdent ]
               Body =
-                  [ varIdent |> Var |> Mutable |> ExpressionStatement ]
-                  |> Block.Create }
+                [ varIdent |> Var |> Mutable |> ExpressionStatement ]
+                |> Block.Create }
 
         let program =
             ((fun _ -> idFunDecl |> FunDeclaration)
@@ -93,11 +93,12 @@ module Variables =
         (repeatsCount: PositiveInt)
         =
 
-      //  let varIdent = Identifier.create (varName |> string)
+        //  let varIdent = Identifier.create (varName |> string)
 
-        let vDecl = Statement.varDeclare (varName |> string) (varInit |> Constant)
-            // { Name = varIdent
-            //   InitExpression = varInit |> Constant }
+        let vDecl =
+            Statement.varDeclare (varName |> string) (varInit |> Constant)
+        // { Name = varIdent
+        //   InitExpression = varInit |> Constant }
 
         let program =
             (fun _ -> vDecl)
@@ -118,10 +119,10 @@ module Variables =
         =
 
         let varIdent = Identifier.create (varName.Get)
-            
+
         let vDecl =
             { Name = varIdent
-              InitExpression = varInit |> Constant |> Some}
+              InitExpression = varInit |> Constant |> Some }
             |> VarDeclarationStatement
 
         let blockize maxLevel statement =
@@ -154,7 +155,7 @@ module Variables =
 
         let vDecl =
             { Name = varIdent
-              InitExpression = varInit |> Constant |> Some}
+              InitExpression = varInit |> Constant |> Some }
             |> VarDeclarationStatement
 
         let program =
@@ -204,11 +205,12 @@ module Variables =
 
         let varIdent = Identifier.create (varName.Get)
 
-        let vDecl = Statement.varDeclare varName.Get (Expression.intConstant varInit)
-            // { Name = varIdent
-            //   InitExpression = Expression.intConstant varInit }
-            // |> VarDeclarationStatement
-            // |> ScopedStatement
+        let vDecl =
+            Statement.varDeclare varName.Get (Expression.intConstant varInit)
+        // { Name = varIdent
+        //   InitExpression = Expression.intConstant varInit }
+        // |> VarDeclarationStatement
+        // |> ScopedStatement
 
         let rec varAssignment curNestCount maxNestCount =
             if curNestCount = maxNestCount then
@@ -237,14 +239,14 @@ module Variables =
 
         let vDecl =
             { Name = iVar
-              InitExpression = Expression.intConstant init |> Some}
+              InitExpression = Expression.intConstant init |> Some }
             |> VarDeclarationStatement
 
         let whileStmt =
             { While.Condition = Expression.less (Expression.var "i") (Expression.intConstant n.Get)
               Body =
-                  (Expression.assignment iVar (Expression.add (Expression.var "i") (Expression.intConstant 1)))
-                  |> ExpressionStatement }
+                (Expression.assignment iVar (Expression.add (Expression.var "i") (Expression.intConstant 1)))
+                |> ExpressionStatement }
             |> WhileStatement
 
         let program =
@@ -291,11 +293,11 @@ module Programs =
         let addFunDecl =
             { Name = funName |> Identifier.create
               Parameters =
-                  [ "a" |> Identifier.create
-                    "b" |> Identifier.create ]
+                [ "a" |> Identifier.create
+                  "b" |> Identifier.create ]
               Body =
-                  Block.Create [ Expression.add ("a" |> Expression.var) ("b" |> Expression.var)
-                                 |> ReturnStatement ] }
+                Block.Create [ Expression.add ("a" |> Expression.var) ("b" |> Expression.var)
+                               |> ReturnStatement ] }
             |> FunDeclaration
 
         let funCall =
@@ -343,16 +345,17 @@ module Programs =
             { Name = funName
               Parameters = [ "n" |> Identifier.create ]
               Body =
-                  [ { Condition =
-                          (Expression.equals varExp zeroConst)
-                          |> Expression.or_ (Expression.equals varExp oneConst)
-                      OnTrue = oneConst |> ReturnStatement
-                      OnFalse =
-                          (Expression.funCall funName [ (Expression.sub varExp oneConst) ])
-                          |> Expression.add (Expression.funCall funName [ (Expression.sub varExp twoConst) ])
-                          |> ReturnStatement |> Some}
-                    |> IfStatement ]
-                  |> Block.Create }
+                [ { Condition =
+                      (Expression.equals varExp zeroConst)
+                      |> Expression.or_ (Expression.equals varExp oneConst)
+                    OnTrue = oneConst |> ReturnStatement
+                    OnFalse =
+                      (Expression.funCall funName [ (Expression.sub varExp oneConst) ])
+                      |> Expression.add (Expression.funCall funName [ (Expression.sub varExp twoConst) ])
+                      |> ReturnStatement
+                      |> Some }
+                  |> IfStatement ]
+                |> Block.Create }
             |> FunDeclaration
 
         let program =
@@ -365,3 +368,158 @@ module Programs =
         let actual = Interpreter.run program
 
         Assert.Equal(expected, actual)
+
+module UserTypes =
+    [<Property>]
+    let ``cant declare two same named structures`` (name: NonEmptyString) =
+        let program =
+            [ Statement.structDeclare name.Get Map.empty
+              Statement.structDeclare name.Get Map.empty ]
+            |> Program
+
+        let actual = Interpreter.run program
+
+        match actual with
+        | Error _ -> true
+        | Ok (_) -> false
+
+    [<Property>]
+    let ``possible to declare two unique  named empty structures`` (name: NonEmptyString) (name2: NonEmptyString) =
+        let program =
+            [ Statement.structDeclare name.Get Map.empty
+              Statement.structDeclare $"{name.Get}{name2.Get}" Map.empty ]
+            |> Program
+
+        let actual = Interpreter.run program
+
+        actual .=. (Value.Void |> Result.Ok)
+
+    [<Property>]
+    let ``its possible to declare single field structure with no initializer``
+        (name: NonEmptyString)
+        (fieldName: NonEmptyString)
+        =
+        let program =
+            [ Statement.structDeclare name.Get ([ (fieldName.Get, None) ] |> Map.ofList) ]
+            |> Program
+
+        let actual = Interpreter.run program
+
+        actual .=. (Value.Void |> Result.Ok)
+
+    [<Property>]
+    let ``its possible to declare single field structure with constant initializer``
+        (name: NonEmptyString)
+        (fieldName: NonEmptyString)
+        =
+        let program =
+            [ Statement.structDeclare
+                  name.Get
+                  ([ (fieldName.Get, Expression.intConstant 1 |> Some) ]
+                   |> Map.ofList) ]
+            |> Program
+
+        let actual = Interpreter.run program
+
+        actual .=. (Value.Void |> Result.Ok)
+
+    [<Property>]
+    let ``its possible to declare single field structure with initializer referring to global variable``
+        (name: NonEmptyString)
+        (fieldName: NonEmptyString)
+        (varName: NonEmptyString)
+        (varValue: int)
+        =
+        let program =
+            [ Statement.varDeclare varName.Get (Expression.intConstant varValue)
+              Statement.structDeclare
+                  name.Get
+                  ([ (fieldName.Get, Expression.var varName.Get |> Some) ]
+                   |> Map.ofList) ]
+            |> Program
+
+        let actual = Interpreter.run program
+
+        actual .=. (Value.Void |> Result.Ok)
+
+    [<Property>]
+    let ``its possible to instantiate empty structure`` (structName: NonEmptyString) (varName: NonEmptyString) =
+        let program =
+            [ Statement.structDeclare structName.Get Map.empty
+              Statement.varDeclare varName.Get (Expression.structInitialize structName.Get Map.empty) ]
+            |> Program
+
+        let actual = Interpreter.run program
+
+        actual .=. (Value.Void |> Result.Ok)
+
+    [<Property>]
+    let ``its possible to instantiate single field structure with initializer referring to global variable``
+        (structName: NonEmptyString)
+        (fieldName: NonEmptyString)
+        (varName: NonEmptyString)
+        (varValue: int)
+        (structVarName: NonEmptyString)
+        =
+        let program =
+            [ Statement.varDeclare varName.Get (Expression.intConstant varValue)
+              Statement.structDeclare
+                  structName.Get
+                  ([ (fieldName.Get, Expression.var varName.Get |> Some) ]
+                   |> Map.ofList)
+              Statement.varDeclare structVarName.Get (Expression.structInitialize structName.Get Map.empty)
+              Expression.var structVarName.Get
+              |> Statement.FromExpression ]
+            |> Program
+
+        let actual = Interpreter.run program
+
+        let expected =
+            { TypeName = structName.Get |> Identifier.create
+              Fields =
+                [ (fieldName.Get |> Identifier.create, ref (varValue |> IntValue)) ]
+                |> Map.ofList }
+            |> StructValue
+            |> Result.Ok
+
+        actual .=. expected
+
+    [<Property>]
+    let ``struct instance initializer overrides default struct type initializer values``
+        (structName: NonEmptyString)
+        (fieldName: NonEmptyString)
+        (structTypeInitializerValue: int)
+        (structInstanceInitializerValue: int)
+        (structVarName: NonEmptyString)
+        =
+        let program =
+            [ Statement.structDeclare
+                structName.Get
+                ([ (fieldName.Get,
+                    Expression.intConstant structTypeInitializerValue
+                    |> Some) ]
+                 |> Map.ofList)
+              Statement.varDeclare
+                  structVarName.Get
+                  (Expression.structInitialize
+                      structName.Get
+                      ([ (fieldName.Get |> Identifier.create,
+                          structInstanceInitializerValue
+                          |> Expression.intConstant) ]
+                       |> Map.ofList))
+
+              Expression.var structVarName.Get
+              |> Statement.FromExpression ]
+            |> Program
+
+        let actual = Interpreter.run program
+
+        let expected =
+            { TypeName = structName.Get |> Identifier.create
+              Fields =
+                [ (fieldName.Get |> Identifier.create, ref (structInstanceInitializerValue |> IntValue)) ]
+                |> Map.ofList }
+            |> StructValue
+            |> Result.Ok
+
+        actual .=. expected

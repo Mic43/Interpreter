@@ -150,7 +150,6 @@ module ExpEvaluator =
 
                 return! binOpEvaluator b.BinaryOp l r
             }
-
         | SimpleUnary (op, exp) ->
             monad' {
                 let! value = tryEvaluateRec exp
@@ -171,31 +170,18 @@ module ExpEvaluator =
         | UserTypeCreation (userTypeExp) ->
             monad' {
                 let! userType =
-                    userTypeFinder userTypeExp.StructName
+                    userTypeFinder userTypeExp.StructTypeName
                     |> Result.mapError EvalError
 
                 match userType.Kind with
                 | Struct s ->
-                    // let! allFields =
-                    //     s.Members
-                    //     |> Map.toList
-                    //     |> List.choose (fun (ident, mem) ->
-                    //         match mem with
-                    //         | Field f -> Some(ident, f))
-                    //     |> Utils.traverseM (fun (i, vd) ->
-                    //         vd.InitExpression
-                    //         |> Option.map tryEvaluateRec
-                    //         |> Option.defaultValue (Void |> Ok)
-                    //         |> Result.map (fun v -> (i, ref v)))
-                    //     |> Result.map (Map.ofList)
-
                     let allFields =
                         s.Members
                         |> Map.toList
                         |> List.choose (fun (ident, mem) ->
                             match mem with
                             | Field f -> Some(ident, f))
-                   
+
                     let! userInitializedfields =
                         userTypeExp.FieldsInitialization
                         |> Map.toList
@@ -218,11 +204,8 @@ module ExpEvaluator =
                             |> Result.map (fun v -> (id, v)))
                         |> Result.map (Map.ofList)
 
-                    //  let fields =
-                    //userInitializedfields |> Map.union allFields
-
                     return
-                        { StructValue.Name = userTypeExp.StructName
+                        { StructValue.TypeName = userTypeExp.StructTypeName
                           Fields = fields }
                         |> StructValue
             }
