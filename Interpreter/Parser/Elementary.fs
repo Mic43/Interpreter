@@ -24,6 +24,7 @@ module Reserved =
     let pCloseCurlyBracket: ParserU<char> = pchar '}'
     let varKeyword: ParserU<string> = pstring "var"
     let funKeyword: ParserU<string> = pstring "fun"
+    let structKeyword: ParserU<string> = pstring "struct"
     let initVarOpKeyWord: ParserU<char> = pchar '='
     let pSemicolon: ParserU<char> = pchar ';'
     let ifKeyword: ParserU<string> = pstring "if"

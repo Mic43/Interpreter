@@ -68,9 +68,41 @@ let main argv =
                 println(\"xx\");
         }
         var v = [1,2,-4];
-                        
-        println(foo(v));
-        printTab(v);
+              
+        struct Point
+        {
+            var x = 0;
+            var y = 0;
+        }
+                    
+        struct Triangle
+        {
+            var p1 = Point{};
+            var p2 = Point{};
+            var p3 = Point{};
+        }
+        struct Poly
+        {
+            var points = [Point{},Point{x=10,y=15}];
+        }
+
+        //fun addPoints(p1,p2)
+        //{
+            //return Point{p1}
+        //}
+
+        var p = Point{};
+        var p2 = Point{x = 10,y=15};
+        var tr = Triangle { p1=Point{x=1,y=2} };
+        var poly = Poly {};
+        println(p);
+        println(p2);
+        println(tr);
+        println(poly);
+
+        
+        //println(foo(v));
+        //printTab(v);
        // v[1] = 9;
         //println(v[0]);
         //var i = 5;

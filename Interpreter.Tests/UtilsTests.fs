@@ -48,15 +48,15 @@ module Traverse =
         (lst |> Utils.traverseM isEven)
         .=. (lst |> Utils.traverseMTail isEven)
 
-    [<Property>]
-    let ``Monadic tail recurisve returns empty when stop condition is always true and mapper retuns ok, for ints``
-        (lst: int list)
-        =
-        let mapper i = i |> Result.Ok
+    // [<Property>]
+    // let ``Monadic tail recurisve returns empty when stop condition is always true and mapper retuns ok, for ints``
+    //     (lst: int list)
+    //     =
+    //     let mapper i = i |> Result.Ok
 
-        (lst
-         |> Utils.traverseMTailUntil (fun _ -> true) mapper)
-        .=. ([] |> Result.Ok)
+    //     (lst
+    //      |> Utils.traverseMTailUntil (fun _ -> true) mapper)
+    //     .=. ([] |> Result.Ok)
 
     [<Property>]
     let ``Aplicative traverse using fold is equal to traverse for ints``
@@ -65,28 +65,28 @@ module Traverse =
         (lst |> Utils.traverseA isEven)
               .=. (lst |> Utils.traverseAUsingFold isEven)
 
-    [<Property>]
-    let ``Monadic tail recurisve stops in correct position, for ints`` (lst: int list) =
-        let mapper i = i |> Result.Ok
+    // [<Property>]
+    // let ``Monadic tail recurisve stops in correct position, for ints`` (lst: int list) =
+    //     let mapper i = i |> Result.Ok
 
-        let condtion i =
-            match isEven i with
-            | Result.Ok _ -> true
-            | _ -> false
+    //     let condtion i =
+    //         match isEven i with
+    //         | Result.Ok _ -> true
+    //         | _ -> false
 
-        let r =
-            monad' {
-                let! r = (lst |> Utils.traverseMTailUntil condtion mapper)
+    //     let r =
+    //         monad' {
+    //             let! r = (lst |> Utils.traverseMTailUntil condtion mapper)
 
-                return
-                    (r
-                     |> (List.take r.Length)
-                     |> List.forall (condtion))
-            }
+    //             return
+    //                 (r
+    //                  |> (List.take r.Length)
+    //                  |> List.forall (condtion))
+    //         }
 
-        match r with
-        | Ok a -> a
-        | _ -> false
+    //     match r with
+    //     | Ok a -> a
+    //     | _ -> false
 
 
 

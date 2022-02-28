@@ -17,7 +17,7 @@ module Statement =
 
     let pFunDecl pBlock =
         funKeyword
-        >>. spaces
+        >>. spaces1
         >>. pipe3
             (pIdentifier .>> spaces .>> openBracket)
             (spaces >>. pIdentList .>> spaces .>> closeBracket)
@@ -30,11 +30,29 @@ module Statement =
     let pVarDecl =
         pipe2
             (varKeyword >>. spaces1 >>. pIdentifier .>> spaces)
-            (initVarOpKeyWord >>. spaces >>. pExpr |> opt .>> spaces .>> pSemicolon)
+            (initVarOpKeyWord >>. spaces >>. pExpr |> opt
+             .>> spaces
+             .>> pSemicolon)
 
             (fun ident exp ->
                 { VarDeclaration.Name = ident
                   InitExpression = exp })
+
+    let pStructDecl =
+        pipe2
+            (structKeyword
+             >>. (spaces1 >>. pIdentifier .>> spaces))
+            (pOpenCurlyBracket >>. ((many (pVarDecl |> trimmed)) |> trimmed)
+             .>> pCloseCurlyBracket
+             .>> spaces)
+            (fun name declList ->
+                { UserType.Kind =
+                    { Struct.Members =
+                        declList
+                        |> List.map (fun vd -> (vd.Name, vd |> Field))
+                        |> Map.ofList }
+                    |> Struct
+                  Name = name })
 
     let pIfStmt pScopedStmt =
 
@@ -107,7 +125,6 @@ module Statement =
         |>> Block.Create
         <!> "block"
 
-
     let pScopedStatement block (blockImpl: Parser<Block, unit> ref) =
         let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()
 
@@ -147,10 +164,13 @@ module Statement =
             createParserForwardedToRef<Block, unit> ()
 
         let funDeclStmt = pFunDecl block |>> FunDeclaration
+        let userTypeDeclStmt = pStructDecl |>> UserTypeDeclaration
         let pScoped = pScopedStatement block blockImpl
 
         spaces
-        >>. (funDeclStmt <|> (pScoped |>> ScopedStatement))
+        >>. (funDeclStmt
+             <|> userTypeDeclStmt
+             <|> (pScoped |>> ScopedStatement))
 
     let pProgram =
         let stmt = pStatement ()

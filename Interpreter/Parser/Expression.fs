@@ -11,7 +11,7 @@ open FSharpPlus.Control.TryBlock
 
 module Expression =
     let pConst = pValue |>> Constant
-      
+
 
     let pVar (pExpr: Parser<Expression, unit>) =
         pipe2
@@ -26,10 +26,9 @@ module Expression =
         |>> Mutable
 
 
-    let pExpList pExpr =
-        sepBy (spaces >>. pExpr .>> spaces) pListSeparator
+    let pExpList pExpr = sepBy (pExpr |> trimmed) pListSeparator
 
-    let pfunCall pExpr =       
+    let pfunCall pExpr =
         (pipe2
             (pIdentifier .>> spaces)
             (openBracket >>. spaces >>. (pExpList pExpr)
@@ -46,14 +45,29 @@ module Expression =
         .>> closeSquareBracket
         |>> ListCreation
 
+    let pInitializerList pExpr =
+        sepBy
+            (pipe2 (pIdentifier .>> (initVarOpKeyWord |> trimmed)) pExpr (fun i e -> (i, e))
+             |> trimmed)
+            pListSeparator
+
+    let pStructCreation pExpr =
+        pipe2
+            (pIdentifier .>> (pOpenCurlyBracket |> trimmed))
+            (pInitializerList pExpr)                  
+            (fun ident initializeList -> {StructTypeName = ident
+                                          FieldsInitialization = initializeList |> Map.ofList} )      
+        .>> pCloseCurlyBracket |>> UserTypeCreation
+
     let pTermExpr pExpr =
 
         let pfunCall = pfunCall pExpr
 
         pConst
-        <|> (attempt pfunCall)
-        <|> (pListCreation pExpr)
-        <|> (pVar pExpr)
+        <|> attempt pfunCall
+        <|> pListCreation pExpr
+        <|> attempt (pStructCreation pExpr)
+        <|> pVar pExpr
 
     let opp =
         new OperatorPrecedenceParser<Expression, unit, unit>()

@@ -454,7 +454,7 @@ module UserTypes =
         actual .=. (Value.Void |> Result.Ok)
 
     [<Property>]
-    let ``its possible to instantiate single field structure with initializer referring to global variable``
+    let ``its possible to instantiate single field structure with its initializer referring to global variable``
         (structName: NonEmptyString)
         (fieldName: NonEmptyString)
         (varName: NonEmptyString)
@@ -499,14 +499,13 @@ module UserTypes =
                     Expression.intConstant structTypeInitializerValue
                     |> Some) ]
                  |> Map.ofList)
-              Statement.varDeclare
-                  structVarName.Get
-                  (Expression.structInitialize
-                      structName.Get
-                      ([ (fieldName.Get |> Identifier.create,
-                          structInstanceInitializerValue
-                          |> Expression.intConstant) ]
-                       |> Map.ofList))
+              Statement.varDeclare structVarName.Get
+              <| Expression.structInitialize
+                  structName.Get 
+                  ([ (fieldName.Get |> Identifier.create,
+                      structInstanceInitializerValue
+                      |> Expression.intConstant) ]
+                   |> Map.ofList)
 
               Expression.var structVarName.Get
               |> Statement.FromExpression ]

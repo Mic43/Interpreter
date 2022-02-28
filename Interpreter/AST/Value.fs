@@ -40,7 +40,7 @@ and Value =
                 |> sprintf "[%s]"
             else
                 ""
-        | StructValue (sv) -> $"{sv.TypeName} {sv.Fields}"
+        | StructValue (sv) -> $"%A{sv.TypeName } %A{sv.Fields}"
 
     member this.ToFloat() =
         match this with
@@ -62,6 +62,19 @@ type EvalStopped =
 module Value =
     let Void = () |> VoidValue
     let createVoid () = Void
+
+    let createStructInstance fields strName =
+        { TypeName = strName |> Identifier.create; Fields = fields }
+        |> StructValue
+
+    let createDefaultStructInstance fieldNames  =
+        createStructInstance (
+            fieldNames
+            |> List.map (fun n -> (n |> Identifier.create, ref Void))
+            |> Map.ofList
+        )
+
+    let createEmptyStructInstance = createStructInstance Map.empty
 
     let ignoreResuls (res: Result<Value list, RunError>) = res |> Result.map (fun _ -> Void)
 
@@ -116,9 +129,7 @@ module Value =
                 let! opString = opString
                 let! resultConvString = resultConvString
 
-                return
-                    opString (toStr v1) (toStr v2)
-                    |> resultConvString
+                return opString (toStr v1) (toStr v2) |> resultConvString
             }
             |> Option.toResultWith (
                 "Operation is not supported for string types"
