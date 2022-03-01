@@ -7,22 +7,33 @@ open Common
 open Reserved
 open Value
 open Identifier
-open FSharpPlus.Control.TryBlock
+//open FSharpPlus.Choice
 
 module Expression =
     let pConst = pValue |>> Constant
 
-
     let pVar (pExpr: Parser<Expression, unit>) =
-        pipe2
-            (pIdentifier .>> spaces |>> Var)
-            (many (
-                openSquareBracket >>. spaces >>. pExpr
-                .>> (closeSquareBracket |> trimmed)
-            ))
-            (fun ident exprList ->
-                exprList
-                |> List.fold (fun mutExp exp -> (mutExp, exp) |> IndexedVar) ident)
+
+        let parseIndexesMembersList () =
+            (openSquareBracket |> trimmed >>. pExpr
+             .>> closeSquareBracket
+             |> trimmed
+             |>> Choice1Of2)
+            <|> (memmberAccessOperator |> trimmed >>. pIdentifier|> trimmed
+                 |>> Choice2Of2)
+            |> many
+
+        (pipe2 (pIdentifier .>> spaces |>> Var) (parseIndexesMembersList ())
+         <| fun ident exprList ->
+             exprList
+             |> List.fold
+                 (fun mutExp exp ->
+                     match exp with
+                     | Choice1Of2 indexExp -> (mutExp, indexExp) |> IndexedVar
+                     | Choice2Of2 (fieldIdentifier) -> (mutExp, fieldIdentifier) |> MemmberAccess)
+                 ident
+
+        )
         |>> Mutable
 
 
@@ -52,12 +63,11 @@ module Expression =
             pListSeparator
 
     let pStructCreation pExpr =
-        pipe2
-            (pIdentifier .>> (pOpenCurlyBracket |> trimmed))
-            (pInitializerList pExpr)                  
-            (fun ident initializeList -> {StructTypeName = ident
-                                          FieldsInitialization = initializeList |> Map.ofList} )      
-        .>> pCloseCurlyBracket |>> UserTypeCreation
+        pipe2 (pIdentifier .>> (pOpenCurlyBracket |> trimmed)) (pInitializerList pExpr) (fun ident initializeList ->
+            { StructTypeName = ident
+              FieldsInitialization = initializeList |> Map.ofList })
+        .>> pCloseCurlyBracket
+        |>> UserTypeCreation
 
     let pTermExpr pExpr =
 

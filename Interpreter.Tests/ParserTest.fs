@@ -509,3 +509,47 @@ module Structs =
             |> Ok
 
         actual .=. expected
+    [<Property>]
+    let ``Memmber access operator gets field value correctly``  (oldValue: int) = 
+        let strName = "aaa"
+        let fieldName = "inner"
+
+        let str =
+            $"
+                struct {strName} {{
+                        var {fieldName}  = {oldValue};
+                }}
+                var z =  {strName}{{}};
+                z.{fieldName};                
+            "
+
+        let actual = Interpreter.Runner.run str
+        let expected = oldValue |> Value.IntValue |> Ok
+
+        actual .=. expected
+    [<Property>]
+    let ``Memmber access operator sets field value correctly``  (oldValue: int) (newValue: int)= 
+        let strName = "aaa"
+        let fieldName = "inner"
+
+        let str =
+            $"
+                struct {strName} {{
+                        var {fieldName}  = {oldValue};
+                }}
+                var z =  {strName}{{}};
+                z.{fieldName} = {newValue};  
+                z;              
+            "
+
+        let actual = Interpreter.Runner.run str
+        let expected =
+            strName
+            |> Value.createStructInstance (
+                [ fieldName |> Identifier.create, newValue |> IntValue |> ref ]
+                |> Map.ofList
+            )
+            |> Ok
+
+
+        actual .=. expected        

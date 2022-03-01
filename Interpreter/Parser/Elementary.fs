@@ -35,7 +35,7 @@ module Reserved =
     let closeSquareBracket: ParserU<string> = pstring "]"
     let returnKeyword:ParserU<string> = pstring "return"
     let comma: ParserU<char> = pchar ','
-
+    let memmberAccessOperator: ParserU<char> = pchar '.'
 module Value =
     open Reserved
     open Common

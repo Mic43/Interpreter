@@ -93,6 +93,20 @@ module ExpEvaluator =
                             |> Errors.createResult Other
                         |> Result.mapError EvalError
                 }
+            | MemmberAccess (var, field) ->
+                monad' {
+                    let! value = mutableExpEvaluator var
+
+                    return!
+                        match value.Value with
+                        | (StructValue sv) ->
+                            sv.Fields
+                            |> Map.tryFind field
+                            |> Option.toResultWith (Errors.create Other $"Cannot find member: {field}")
+                        | _ -> "left side of member access operator must be struct" |> Errors.createResult Other
+                        |> Result.mapError EvalError
+                }
+
 
         let assignmentEvaluator mutableExpr expr =
             match mutableExpr with

@@ -34,7 +34,7 @@ type BinaryOp =
 type MutableExpression =
     | Var of Identifier
     | IndexedVar of (MutableExpression * Expression)
-
+    | MemmberAccess of (MutableExpression * Identifier)
 and Expression =
     | Binary of
         {| BinaryOp: BinaryOp
