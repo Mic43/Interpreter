@@ -86,19 +86,31 @@ let main argv =
             var points = [Point{},Point{x=10,y=15}];
         }
 
-        //fun addPoints(p1,p2)
-        //{
-            //return Point{p1}
-        //}
+        fun addPoints(p1,p2)
+        {
+            return Point{x = p1.x + p2.x,y = p1.y+p2.y};
+        }
+        fun createTriangle(p1,p2,p3)
+        {
+            return Triangle{p1=p1,p2=p2,p3=p3};
+        }
 
-        var p = Point{};
+        var p = Point{x=3};
         var p2 = Point{x = 10,y=15};
         var tr = Triangle { p1=Point{x=1,y=2} };
-        var poly = Poly {};
-        println(p);
-        println(p2);
+        tr = createTriangle(p,p2,p);
         println(tr);
-        println(poly);
+        p.x = 99;
+        println(tr);
+        var poly = Poly {};
+//        println(p);
+      //  println(p2);
+
+        //println(poly.points[1].x);
+        var p3 = addPoints(p,p2);
+        println(p3);
+        //println(tr);
+        //println(poly);
 
         
         //println(foo(v));

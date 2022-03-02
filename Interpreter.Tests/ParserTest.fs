@@ -509,8 +509,9 @@ module Structs =
             |> Ok
 
         actual .=. expected
+
     [<Property>]
-    let ``Memmber access operator gets field value correctly``  (oldValue: int) = 
+    let ``Memmber access operator gets field value correctly`` (oldValue: int) =
         let strName = "aaa"
         let fieldName = "inner"
 
@@ -520,15 +521,16 @@ module Structs =
                         var {fieldName}  = {oldValue};
                 }}
                 var z =  {strName}{{}};
-                z.{fieldName};                
+                z.{fieldName};
             "
 
         let actual = Interpreter.Runner.run str
         let expected = oldValue |> Value.IntValue |> Ok
 
         actual .=. expected
+
     [<Property>]
-    let ``Memmber access operator sets field value correctly``  (oldValue: int) (newValue: int)= 
+    let ``Memmber access operator sets field value correctly`` (oldValue: int) (newValue: int) =
         let strName = "aaa"
         let fieldName = "inner"
 
@@ -538,11 +540,12 @@ module Structs =
                         var {fieldName}  = {oldValue};
                 }}
                 var z =  {strName}{{}};
-                z.{fieldName} = {newValue};  
-                z;              
+                z.{fieldName} = {newValue};
+                z;
             "
 
         let actual = Interpreter.Runner.run str
+
         let expected =
             strName
             |> Value.createStructInstance (
@@ -552,4 +555,66 @@ module Structs =
             |> Ok
 
 
-        actual .=. expected        
+        actual .=. expected
+
+    [<Property>]
+    let ``Memmber access operator gets nested field value correctly`` (oldValue: int) =
+        let strName = "aaa"
+        let fieldName = "inner"
+        let nestedStrName = "aaaNested"
+        let nestedFieldName = "innerNested"
+
+        let str =
+            $"
+                struct {nestedStrName} {{
+                    var {nestedFieldName} = {oldValue};
+                }}
+                struct {strName} {{
+                        var {fieldName}  = {nestedStrName}{{}};
+                }}
+                var z =  {strName}{{}};
+                z.{fieldName}.{nestedFieldName};
+            "
+
+        let actual = Interpreter.Runner.run str
+        let expected = oldValue |> IntValue |> Ok
+
+        actual .=. expected
+
+    [<Property>]
+    let ``Memmber access operator sets nested field value correctly`` (oldValue: int) (newValue: int) =
+        let strName = "aaa"
+        let fieldName = "inner"
+        let nestedStrName = "aaaNested"
+        let nestedFieldName = "innerNested"
+
+        let str =
+            $"
+                struct {nestedStrName} {{
+                    var {nestedFieldName} = {oldValue};
+                }}
+                struct {strName} {{
+                        var {fieldName}  = {nestedStrName}{{}};
+                }}
+                var z =  {strName}{{}};
+                z.{fieldName}.{nestedFieldName} = {newValue};
+                z;
+            "
+
+        let actual = Interpreter.Runner.run str
+
+        let expected =
+            strName
+            |> Value.createStructInstance (
+                [ fieldName |> Identifier.create,
+                  (nestedStrName
+                   |> Value.createStructInstance (
+                       [ (nestedFieldName |> Identifier.create, newValue |> IntValue |> ref) ]
+                       |> Map.ofList
+                   ))
+                  |> ref ]
+                |> Map.ofList
+            )
+            |> Ok
+
+        actual .=. expected
