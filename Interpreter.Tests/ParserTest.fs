@@ -618,3 +618,41 @@ module Structs =
             |> Ok
 
         actual .=. expected
+
+    [<Property>]
+    let ``declaration of struct with initializer referring to another member works correctly`` () =
+        let str =
+            $"
+                struct ssss4 {{ var inner1 = 5; var inner2 = inner1;  }}
+            "
+
+        let actual = Interpreter.Runner.run str
+        let expected = Value.Void |> Ok
+
+        actual .=. expected
+
+    [<Property>]
+    let ``instantation of struct with initializer referring to another member is possible`` (fieldValue: int) =
+        let strName = "aaa"
+        let fieldName = "inner"
+        let fieldName2 = "inner2"
+
+        let str =
+            $"
+                struct {strName} {{ var {fieldName} = {fieldValue}; var {fieldName2} = {fieldName};  }}
+                var z = {strName} {{}} ;
+                z;
+            "
+
+        let actual = Interpreter.Runner.run str
+
+        let expected =
+            strName
+            |> Value.createStructInstance (
+                [ (fieldName |> Identifier.create, fieldValue |> IntValue |> ref)
+                  (fieldName2 |> Identifier.create, fieldValue |> IntValue |> ref) ]
+                |> Map.ofList
+            )
+            |> Ok
+
+        actual .=. expected

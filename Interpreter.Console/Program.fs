@@ -78,7 +78,7 @@ let main argv =
         struct Triangle
         {
             var p1 = Point{};
-            var p2 = Point{};
+            var p2 = p2;
             var p3 = Point{};
         }
         struct Poly
@@ -103,12 +103,13 @@ let main argv =
         p.x = 99;
         println(tr);
         var poly = Poly {};
+        println(poly);
 //        println(p);
       //  println(p2);
 
         //println(poly.points[1].x);
-        var p3 = addPoints(p,p2);
-        println(p3);
+       // var p3 = addPoints(p,p2);
+        //println(p3);
         //println(tr);
         //println(poly);
 

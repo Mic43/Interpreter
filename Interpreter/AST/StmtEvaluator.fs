@@ -65,31 +65,81 @@ module StmtEvaluator =
                         |> Result.mapError EvalError
             }
 
-        let evaluateExpression exp =
-            ExpEvaluator.tryEvaluate
-                (Environment.tryGetUserType environment)
-                (Environment.tryGetVarValue environment)
-                ExpEvaluator.constEvaluator
-                ExpEvaluator.binaryOpEvaluator
-                ExpEvaluator.unaryOpEvaluator
-                evaluateFunctionCall
-                exp
-
-        let calculateInitValue varDeclarationInit =
+        let calculateInitValue (evaluateExpression: ExpEvaluator) varDeclarationInit =
             varDeclarationInit.InitExpression
             |> Option.defaultValue (Expression.voidConstant ())
             |> evaluateExpression
 
-
-        let evaluateVarDeclaration vd =
+        let evaluateVarDeclaration evaluateExpression vd =
             monad' {
-                let! initVal = vd |> calculateInitValue
+                let! initVal = vd |> calculateInitValue evaluateExpression
 
                 return!
                     (Environment.tryDefineVar environment vd.Name initVal)
                     |> (Result.map Value.createVoid)
                     |> Result.mapError EvalError
             }
+
+        let evalUserTypeCreation (evaluateExpression: ExpEvaluator) userTypeExp =
+            let userTypeFinder = Environment.tryGetUserType environment
+            let varEvaluator = Environment.tryGetVarValue environment
+
+            monad' {
+                let! userType =
+                    userTypeFinder userTypeExp.StructTypeName
+                    |> Result.mapError EvalError
+
+                match userType.Kind with
+                | Struct s ->
+                    Environment.nestNewEmptyEnvironment environment
+
+                    let allFields =
+                        s.Members
+                        |> Map.toList
+                        |> List.choose (fun (ident, mem) ->
+                            match mem with
+                            | Field f -> Some(ident, f))
+
+                    let! userInitializedfields =
+                        userTypeExp.FieldsInitialization
+                        |> Map.toList
+                        |> Utils.traverseM (fun (identifier, initializerExp) ->
+                            evaluateExpression initializerExp
+                            |> Result.map (fun v -> (identifier, ref v)))
+                        |> Result.map (Map.ofList)
+
+                    let! fields =
+                        allFields
+                        |> Utils.traverseM (fun (id, vd) ->
+                            (userInitializedfields.TryFind id)
+                            |> Option.map Ok
+                            |> Option.defaultWith (fun () ->
+
+                                evaluateVarDeclaration evaluateExpression vd
+                                |> ignore
+
+                                varEvaluator vd.Name |> Result.mapError EvalError)
+                            |> Result.map (fun v -> (id, v)))
+                        |> Result.map (Map.ofList)
+
+                    Environment.returnToParent environment
+
+                    return
+                        { StructValue.TypeName = userTypeExp.StructTypeName
+                          Fields = fields }
+                        |> StructValue
+            }
+
+        let rec evaluateExpression exp =
+            ExpEvaluator.tryEvaluate
+                (Environment.tryGetVarValue environment)
+                ExpEvaluator.constEvaluator
+                ExpEvaluator.binaryOpEvaluator
+                ExpEvaluator.unaryOpEvaluator
+                evaluateFunctionCall
+                (evalUserTypeCreation evaluateExpression)
+                exp
+
 
         let rec loop body condition incrementExp : Result<Value, EvalStopped> =
             monad' {
@@ -103,6 +153,11 @@ module StmtEvaluator =
                     return Value.Void
             }
 
+
+        let evaluateVarDeclaration =
+            evaluateVarDeclaration evaluateExpression
+
+        let calculateInitValue = calculateInitValue evaluateExpression
 
         match exp with
         | ExpressionStatement exp -> exp |> evaluateExpression
@@ -149,7 +204,7 @@ module StmtEvaluator =
     let evaluate (environment: ExecutionEnvironment) statement =
         match (statement, environment.IsCurrentGlobal) with
         | (FunDeclaration fd, true) -> Environment.tryDefineCallable environment (fd |> Function)
-        | (UserTypeDeclaration userTypeDecl, true) -> Environment.tryDefineUserType environment userTypeDecl         
+        | (UserTypeDeclaration userTypeDecl, true) -> Environment.tryDefineUserType environment userTypeDecl
         | (FunDeclaration _, false)
         | (UserTypeDeclaration _, false) ->
             "Function and structures can be defined only on global scope"

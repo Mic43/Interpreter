@@ -4,7 +4,7 @@ open FSharpPlus
 open System.Collections.Generic
 open System.Linq
 
-type ExpEvaluator = Expression -> Result<Value, RunError>
+type ExpEvaluator = Expression -> Result<Value, EvalStopped>
 
 module ExpEvaluator =
     open Value
@@ -53,17 +53,18 @@ module ExpEvaluator =
         |> Result.mapError EvalError
 
     let rec tryEvaluate
-        (userTypeFinder: Identifier -> Result<UserType, RunError>)
+     //   (userTypeFinder: Identifier -> Result<UserType, RunError>)
         (varEvaluator: Identifier -> Result<Ref<Value>, RunError>)
         constEvaluator
         binOpEvaluator
         unaryOpEvaluator
         funEvaluator
+        evalUserTypeCreation      
         (expression: Expression)
         : Result<Value, EvalStopped> =
 
         let tryEvaluateRec =
-            tryEvaluate userTypeFinder varEvaluator constEvaluator binOpEvaluator unaryOpEvaluator funEvaluator
+            tryEvaluate varEvaluator constEvaluator binOpEvaluator unaryOpEvaluator funEvaluator evalUserTypeCreation//varDeclEvaluator
 
         let rec mutableExpEvaluator mutableExpr : Result<Ref<Value>, EvalStopped> =
 
@@ -106,7 +107,6 @@ module ExpEvaluator =
                         | _ -> "left side of member access operator must be struct" |> Errors.createResult Other
                         |> Result.mapError EvalError
                 }
-
 
         let assignmentEvaluator mutableExpr expr =
             match mutableExpr with
@@ -182,44 +182,49 @@ module ExpEvaluator =
             |> (Utils.traverseM tryEvaluateRec)
             |> Result.map (fun l -> l |> List.map (fun i -> ref i) |> ListValue)
         | UserTypeCreation (userTypeExp) ->
-            monad' {
-                let! userType =
-                    userTypeFinder userTypeExp.StructTypeName
-                    |> Result.mapError EvalError
+            evalUserTypeCreation userTypeExp
+        
+            // monad' {
+            //     let! userType =
+            //         userTypeFinder userTypeExp.StructTypeName
+            //         |> Result.mapError EvalError
 
-                match userType.Kind with
-                | Struct s ->
-                    let allFields =
-                        s.Members
-                        |> Map.toList
-                        |> List.choose (fun (ident, mem) ->
-                            match mem with
-                            | Field f -> Some(ident, f))
+            //     match userType.Kind with
+            //     | Struct s ->
+            //         let allFields =
+            //             s.Members
+            //             |> Map.toList
+            //             |> List.choose (fun (ident, mem) ->
+            //                 match mem with
+            //                 | Field f -> Some(ident, f))
 
-                    let! userInitializedfields =
-                        userTypeExp.FieldsInitialization
-                        |> Map.toList
-                        |> Utils.traverseM (fun (identifier, initializerExp) ->
-                            tryEvaluateRec initializerExp
-                            |> Result.map (fun v -> (identifier, ref v)))
-                        |> Result.map (Map.ofList)
+            //         let! userInitializedfields =
+            //             userTypeExp.FieldsInitialization
+            //             |> Map.toList
+            //             |> Utils.traverseM (fun (identifier, initializerExp) ->
+            //                 tryEvaluateRec initializerExp
+            //                 |> Result.map (fun v -> (identifier, ref v)))
+            //             |> Result.map (Map.ofList)
 
-                    let! fields =
-                        allFields
-                        |> Utils.traverseM (fun (id, vd) ->
-                            (userInitializedfields.TryFind id)
-                            |> Option.map Ok
-                            |> Option.defaultValue (
-                                vd.InitExpression
-                                |> Option.map (fun initExp -> initExp |> tryEvaluateRec)
-                                |> Option.defaultValue (Value.Void |> Ok)
-                                |> Result.map (fun v -> ref v)
-                            )
-                            |> Result.map (fun v -> (id, v)))
-                        |> Result.map (Map.ofList)
+            //         let! fields =
+            //             allFields
+            //             |> Utils.traverseM (fun (id, vd) ->
+            //                 (userInitializedfields.TryFind id)
+            //                 |> Option.map Ok
+            //                 |> Option.defaultWith ( fun () ->
+                                
+            //                     varDeclEvaluator vd |> ignore
+            //                     varEvaluator vd.Name |> Result.mapError EvalError
+            //                     // vd.InitExpression
+            //                     // |> Option.map (fun initExp -> initExp |> tryEvaluateRec)
+            //                     // |> Option.defaultValue (Value.Void |> Ok)
+            //                     // |> Result.map (fun v -> ref v)
+            //                 )
+            //                 |> Result.map (fun v -> (id, v)))
+            //             |> Result.map (Map.ofList)
 
-                    return
-                        { StructValue.TypeName = userTypeExp.StructTypeName
-                          Fields = fields }
-                        |> StructValue
-            }
+            //         return
+            //             { StructValue.TypeName = userTypeExp.StructTypeName
+            //               Fields = fields }
+            //             |> StructValue
+            // }
