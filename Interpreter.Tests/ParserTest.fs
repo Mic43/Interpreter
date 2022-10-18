@@ -246,7 +246,7 @@ module Variables =
         | Ok (_) -> false
         | Error (re) ->
             match re with
-            | Interpreter.RunError _ -> true
+            | Interpreter.ExecuteError _ -> true
             | _ -> false
 
 module Structs =

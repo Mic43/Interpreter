@@ -52,7 +52,7 @@ type Function =
 
 type CompiledFunction =
     { Name: Identifier
-      Execute: (Value list -> Result<Value, RunError>) }
+      Execute: (Value list -> Result<Value, ExecuteError>) }
 
 type Callable =
     | Function of Function

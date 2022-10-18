@@ -140,7 +140,6 @@ module StmtEvaluator =
                 (evalUserTypeCreation evaluateExpression)
                 exp
 
-
         let rec loop body condition incrementExp : Result<Value, EvalStopped> =
             monad' {
                 let! condVal = condition |> evaluateExpression
@@ -152,7 +151,6 @@ module StmtEvaluator =
                 else
                     return Value.Void
             }
-
 
         let evaluateVarDeclaration =
             evaluateVarDeclaration evaluateExpression

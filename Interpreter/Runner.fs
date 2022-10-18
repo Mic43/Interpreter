@@ -7,7 +7,10 @@ open FParsec.CharParsers
 open FSharpPlus
 
 
-type RunnerError = | RunError of RunError | ParseError of string
+type RunnerError =
+    | ExecuteError of ExecuteError
+    | ParseError of string
+
 module Runner =
     let private preprocessComments programStr =
         let comment = "//"
@@ -21,16 +24,30 @@ module Runner =
 
     let run programString =
         let preprocessor = preprocessComments
-        let parser = Parser.Statement.pProgram
 
-        match programString |> preprocessor |> run parser with
-        | Success (program, _, _) ->
-            match Interpreter.run program with
-            | Ok r -> r |> Ok  
-            | Error (errorValue) -> printfn "Failure: %A" errorValue   
-                                    errorValue |> RunError |> Error                               
-        | Failure (errorMsg, _, _) ->         
-            printfn "Failure: %s" errorMsg
-            errorMsg |> ParseError |> Error
+        let parserRun str =
+            let parser = Parser.Statement.pProgram
 
+            match str |> run parser with
+            | Success (program, _, _) -> program |> Result.Ok
+            | Failure (errorMsg, _, _) -> errorMsg |> ParseError |> Error
+               
+        let optimize program = 
+            let expOptimizer =
+                       ExpSimplifier.simplifyNode
+                       |> ExpSimplifier.simplify >> Ok
+            program |> Ok
 
+        programString
+        |> preprocessor
+        |> parserRun
+        |> Result.bind optimize
+        |> Result.bind (Interpreter.run >> Result.mapError ExecuteError)
+//| Success (program, _, _) ->
+//    match Interpreter.run program with
+//    | Ok r -> r |> Ok
+//    | Error (errorValue) -> printfn "Failure: %A" errorValue
+//                            errorValue |> ExecuteError |> Error
+//| Failure (errorMsg, _, _) ->
+//    printfn "Failure: %s" errorMsg
+//    errorMsg |> ParseError |> Error

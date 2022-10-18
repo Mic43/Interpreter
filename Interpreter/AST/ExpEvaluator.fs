@@ -54,7 +54,7 @@ module ExpEvaluator =
 
     let rec tryEvaluate
      //   (userTypeFinder: Identifier -> Result<UserType, RunError>)
-        (varEvaluator: Identifier -> Result<Ref<Value>, RunError>)
+        (varEvaluator: Identifier -> Result<Ref<Value>, ExecuteError>)
         constEvaluator
         binOpEvaluator
         unaryOpEvaluator
@@ -184,47 +184,3 @@ module ExpEvaluator =
         | UserTypeCreation (userTypeExp) ->
             evalUserTypeCreation userTypeExp
         
-            // monad' {
-            //     let! userType =
-            //         userTypeFinder userTypeExp.StructTypeName
-            //         |> Result.mapError EvalError
-
-            //     match userType.Kind with
-            //     | Struct s ->
-            //         let allFields =
-            //             s.Members
-            //             |> Map.toList
-            //             |> List.choose (fun (ident, mem) ->
-            //                 match mem with
-            //                 | Field f -> Some(ident, f))
-
-            //         let! userInitializedfields =
-            //             userTypeExp.FieldsInitialization
-            //             |> Map.toList
-            //             |> Utils.traverseM (fun (identifier, initializerExp) ->
-            //                 tryEvaluateRec initializerExp
-            //                 |> Result.map (fun v -> (identifier, ref v)))
-            //             |> Result.map (Map.ofList)
-
-            //         let! fields =
-            //             allFields
-            //             |> Utils.traverseM (fun (id, vd) ->
-            //                 (userInitializedfields.TryFind id)
-            //                 |> Option.map Ok
-            //                 |> Option.defaultWith ( fun () ->
-                                
-            //                     varDeclEvaluator vd |> ignore
-            //                     varEvaluator vd.Name |> Result.mapError EvalError
-            //                     // vd.InitExpression
-            //                     // |> Option.map (fun initExp -> initExp |> tryEvaluateRec)
-            //                     // |> Option.defaultValue (Value.Void |> Ok)
-            //                     // |> Result.map (fun v -> ref v)
-            //                 )
-            //                 |> Result.map (fun v -> (id, v)))
-            //             |> Result.map (Map.ofList)
-
-            //         return
-            //             { StructValue.TypeName = userTypeExp.StructTypeName
-            //               Fields = fields }
-            //             |> StructValue
-            // }

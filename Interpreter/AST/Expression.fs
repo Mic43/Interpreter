@@ -35,11 +35,14 @@ type MutableExpression =
     | Var of Identifier
     | IndexedVar of (MutableExpression * Expression)
     | MemmberAccess of (MutableExpression * Identifier)
+
+and BinaryExpression =
+    { BinaryOp: BinaryOp
+      LeftOperand: Expression
+      RightOperand: Expression }
+
 and Expression =
-    | Binary of
-        {| BinaryOp: BinaryOp
-           LeftOperand: Expression
-           RightOperand: Expression |}
+    | Binary of BinaryExpression
     | SimpleUnary of UnaryOp * Expression
     | Increment of IncrementOp * Expression
     | Assignment of Expression * Expression
@@ -58,6 +61,7 @@ and FunCall =
       ActualParameters: Expression list }
 
 module Expression =
+
     let var identifier =
         identifier |> Identifier.create |> Var |> Mutable
 
@@ -79,9 +83,9 @@ module Expression =
         (identifier |> Var |> Mutable, exp) |> Assignment
 
     let binary operator leftOperand rightOperand =
-        {| BinaryOp = operator
-           LeftOperand = leftOperand
-           RightOperand = rightOperand |}
+        { BinaryOp = operator
+          LeftOperand = leftOperand
+          RightOperand = rightOperand }
         |> Binary
 
     let add leftOperand rightOperand =

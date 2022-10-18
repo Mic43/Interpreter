@@ -148,14 +148,15 @@ let main argv =
       //  var    z = [0];
        // z[0]++;
        "
-    let v = 5
-    let z = ref v |> List.singleton
+    // let v = 5
+    // let z = ref v |> List.singleton
 
-    printfn "%A" z.[0]
+    // printfn "%A" z.[0]
     
-    z.[0].Value <- 6
+    // z.[0].Value <- 6
 
-    printfn "%A" z.[0]
+    // printfn "%A" z.[0]
+    
     
     Interpreter.Runner.run str |> ignore
     Console.ReadLine() |> ignore

@@ -18,6 +18,16 @@ and Value =
     | ListValue of Ref<Value> list
     | StructValue of StructValue
 
+
+    member this.IsZero() =
+        match this with
+        | IntValue 0 -> true
+        | FloatValue 0.0 -> true
+        | BoolValue false -> true
+        | StringValue "" -> true
+        | ListValue ([]) -> true
+        | _ -> false
+
     member this.ToBool() =
         match this with
         | IntValue v -> System.Convert.ToBoolean(v)
@@ -40,7 +50,7 @@ and Value =
                 |> sprintf "[%s]"
             else
                 ""
-        | StructValue (sv) -> $"%A{sv.TypeName } %A{sv.Fields}"
+        | StructValue (sv) -> $"%A{sv.TypeName} %A{sv.Fields}"
 
     member this.ToFloat() =
         match this with
@@ -56,7 +66,7 @@ and Value =
         | v -> ref v |> List.singleton
 
 type EvalStopped =
-    | EvalError of RunError
+    | EvalError of ExecuteError
     | ReturnStmtReached of Value
 
 module Value =
@@ -64,10 +74,11 @@ module Value =
     let createVoid () = Void
 
     let createStructInstance fields strName =
-        { TypeName = strName |> Identifier.create; Fields = fields }
+        { TypeName = strName |> Identifier.create
+          Fields = fields }
         |> StructValue
 
-    let createDefaultStructInstance fieldNames  =
+    let createDefaultStructInstance fieldNames =
         createStructInstance (
             fieldNames
             |> List.map (fun n -> (n |> Identifier.create, ref Void))
@@ -76,9 +87,9 @@ module Value =
 
     let createEmptyStructInstance = createStructInstance Map.empty
 
-    let ignoreResuls (res: Result<Value list, RunError>) = res |> Result.map (fun _ -> Void)
+    let ignoreResuls (res: Result<Value list, ExecuteError>) = res |> Result.map (fun _ -> Void)
 
-    let getLastResultOrVoid (res: Result<Value list, RunError>) =
+    let getLastResultOrVoid (res: Result<Value list, ExecuteError>) =
         res
         |> Result.map (fun vl -> vl |> (List.tryLast >> (Option.defaultValue Void)))
 
