@@ -74,6 +74,8 @@ module Expression =
     let intConstant value = value |> IntValue |> Constant
     let voidConstant () = Value.Void |> Constant
 
+   // let zero<'T>()
+    
     let structInitialize structTypeName fieldsInitializers =
         { StructCreationExpression.StructTypeName = structTypeName |> Identifier.create
           FieldsInitialization = fieldsInitializers }

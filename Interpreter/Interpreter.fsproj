@@ -12,8 +12,8 @@
     <Compile Include="AST\DefaultEnvironment.fs" />
     <Compile Include="AST\Environment.fs" />
     <Compile Include="AST\Printer.fs" />
-    <Compile Include="AST\ExpSimplifier.fs" />
     <Compile Include="AST\ExpEvaluator.fs" />
+    <Compile Include="AST\ExpSimplifier.fs" />
     <Compile Include="AST\StmtEvaluator.fs" />
     <Compile Include="AST\Interpreter.fs" />
     <Compile Include="Parser\Elementary.fs" />

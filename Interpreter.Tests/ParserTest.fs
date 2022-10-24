@@ -7,9 +7,7 @@ open FsCheck
 open FsCheck.Xunit
 open FSharpPlus
 open FSharpPlus.Data
-
-let (.=.) left right =
-    left = right |@ sprintf "%A = %A" left right
+open ExpressionHelper
 
 module Variables =
     [<Property>]

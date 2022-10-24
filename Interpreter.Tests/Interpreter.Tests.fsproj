@@ -5,6 +5,9 @@
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Infrastructure\ExpressionHelper.fs" />
+    <Compile Include="Infrastructure\Generators.fs" />
+    <Compile Include="ExpSimplifierTest.fs" />
     <Compile Include="ParserTest.fs" />
     <Compile Include="RunnerTests2.fs" />
     <Compile Include="UtilsTests.fs" />

@@ -58,7 +58,7 @@ and Value =
         | FloatValue v -> v
         | BoolValue v -> System.Convert.ToSingle(v) |> float
         | v -> invalidArg "val" (sprintf "cannot convert %A to float" v)
-
+    
     member this.ToList() =
         match this with
         | ListValue v -> v
@@ -70,7 +70,7 @@ type EvalStopped =
     | ReturnStmtReached of Value
 
 module Value =
-    let Void = () |> VoidValue
+    let Void = () |> VoidValue    
     let createVoid () = Void
 
     let createStructInstance fields strName =
