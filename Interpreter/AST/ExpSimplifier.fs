@@ -6,11 +6,19 @@ open System.Linq
 
 
 module ExpSimplifier =
-    //let private (|BinaryExp|_|) (exp : Expression) left right op =
 
-    //    match exp with
-    //    | Binary b when b ={ LeftOperand = left;RightOperand = right;BinaryOp = op } -> Some(b)
-    //    | _ -> None
+    /// matches (a*b) + (c*d) binary expression
+    let private (|MulDistributivity|_|) (exp: BinaryExpression) =
+
+        match exp with
+        | { LeftOperand = Binary ({ LeftOperand = a
+                                    RightOperand = b
+                                    BinaryOp = ArithmeticOp Mul })
+            RightOperand = Binary ({ LeftOperand = c
+                                     RightOperand = d
+                                     BinaryOp = ArithmeticOp Mul })
+            BinaryOp = ArithmeticOp Add } -> Some((a, b, c, d))
+        | _ -> None
 
     let rec simplifyNode exp =
         let simplifyUnary =
@@ -39,41 +47,10 @@ module ExpSimplifier =
                 |> Result.contains 1.0
                 ->
                 other
-            | b -> b |> Binary 
+            | b -> b |> Binary
 
-        let simplifyAdd =
-            function
-            | { LeftOperand = Constant v
-                RightOperand = right } when v.IsZero() -> right
-            | { RightOperand = Constant v
-                LeftOperand = left } when v.IsZero() -> left
-            | { LeftOperand = Binary ({ LeftOperand = a
-                                        RightOperand = b
-                                        BinaryOp = ArithmeticOp Mul })
-                RightOperand = Binary ({ LeftOperand = a2
-                                         RightOperand = c
-                                         BinaryOp = ArithmeticOp Mul }) }
-            | { LeftOperand = Binary ({ LeftOperand = b
-                                        RightOperand = a
-                                        BinaryOp = ArithmeticOp Mul })
-                RightOperand = Binary ({ LeftOperand = a2
-                                         RightOperand = c
-                                         BinaryOp = ArithmeticOp Mul }) } 
-            | { LeftOperand = Binary ({ LeftOperand = a
-                                        RightOperand = b
-                                        BinaryOp = ArithmeticOp Mul })
-                RightOperand = Binary ({ LeftOperand = c
-                                         RightOperand = a2
-                                         BinaryOp = ArithmeticOp Mul }) }                     
-            | { LeftOperand = Binary ({ LeftOperand = b
-                                        RightOperand = a
-                                        BinaryOp = ArithmeticOp Mul })
-                RightOperand = Binary ({ LeftOperand = c
-                                         RightOperand = a2
-                                         BinaryOp = ArithmeticOp Mul }) }                                               
-                                         
-                                         when a = a2 ->
-
+        let simplifyAdd exp =
+            let simplifiedDistributivity a b c =
                 (a,
                  (b, c)
                  ||> Expression.binary (ArithmeticOp Add)
@@ -81,7 +58,54 @@ module ExpSimplifier =
 
                 ||> Expression.binary (ArithmeticOp Mul)
                 |> simplifyNode
-            | b -> b |> Binary 
+
+            match exp with
+            | { LeftOperand = Constant v
+                RightOperand = right } when v.IsZero() -> right
+            | { RightOperand = Constant v
+                LeftOperand = left } when v.IsZero() -> left
+            //| { LeftOperand = Binary ({ LeftOperand = a
+            //                            RightOperand = b
+            //                            BinaryOp = ArithmeticOp Mul })
+            //    RightOperand = Binary ({ LeftOperand = a2
+            //                             RightOperand = c
+            //                             BinaryOp = ArithmeticOp Mul }) }
+            //| { LeftOperand = Binary ({ LeftOperand = b
+            //                            RightOperand = a
+            //                            BinaryOp = ArithmeticOp Mul })
+            //    RightOperand = Binary ({ LeftOperand = a2
+            //                             RightOperand = c
+            //                             BinaryOp = ArithmeticOp Mul }) }
+            //| { LeftOperand = Binary ({ LeftOperand = a
+            //                            RightOperand = b
+            //                            BinaryOp = ArithmeticOp Mul })
+            //    RightOperand = Binary ({ LeftOperand = c
+            //                             RightOperand = a2
+            //                             BinaryOp = ArithmeticOp Mul }) }
+            //| { LeftOperand = Binary ({ LeftOperand = b
+            //                            RightOperand = a
+            //                            BinaryOp = ArithmeticOp Mul })
+            //    RightOperand = Binary ({ LeftOperand = c
+            //                             RightOperand = a2
+            //                             BinaryOp = ArithmeticOp Mul }) } when
+
+            //    a = a2
+            //    ->
+
+            //    (a,
+            //     (b, c)
+            //     ||> Expression.binary (ArithmeticOp Add)
+            //     |> simplifyNode)
+
+            //    ||> Expression.binary (ArithmeticOp Mul)
+            //    |> simplifyNode
+            //(a*b) + (c*d)                                      _*(_+_)
+            | MulDistributivity (a, b, c, d) when a = c -> simplifiedDistributivity a b d
+            | MulDistributivity (a, b, c, d) when a = d -> simplifiedDistributivity a b c
+            | MulDistributivity (a, b, c, d) when b = c -> simplifiedDistributivity b a d
+            | MulDistributivity (a, b, c, d) when b = d -> simplifiedDistributivity b a c
+
+            | b -> b |> Binary
 
         let simplifySub =
             function
@@ -90,6 +114,7 @@ module ExpSimplifier =
             | { RightOperand = right
                 LeftOperand = left } when left = right -> 0 |> Expression.intConstant
             | b -> b |> Binary
+
         let simplifyBinary =
             function
             | { BinaryOp = ArithmeticOp Add } as exp -> simplifyAdd exp

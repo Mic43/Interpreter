@@ -72,6 +72,9 @@ module Expression =
 
     let floatConstant value = value |> FloatValue |> Constant
     let intConstant value = value |> IntValue |> Constant
+    let trueConstant = true |> BoolValue |> Constant
+    let falseConstant = false |> BoolValue |> Constant
+
     let voidConstant () = Value.Void |> Constant
 
    // let zero<'T>()

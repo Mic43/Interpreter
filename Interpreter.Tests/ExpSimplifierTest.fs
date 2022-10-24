@@ -70,7 +70,7 @@ module Binary =
             | Constant v when v.IsZero() -> true
             | _ -> false)
         |> Prop.forAll (Values.numericValues |> Arb.fromGen)
-    
+
     [<Property>]
     let ``Mul by left zero simplifies correctly`` () =
         (fun value ->
@@ -85,18 +85,16 @@ module Binary =
             | Constant v when v.IsZero() -> true
             | _ -> false)
         |> Prop.forAll (Values.numericValues |> Arb.fromGen)
-    
-    [<Property>]    
+
+    [<Property>]
     let ``Mul by one left does not change expression`` () =
-       (fun value ->
-           let valueExp = (value |> Constant)
+        (fun value ->
+            let valueExp = (value |> Constant)
 
-           let exp =
-               Expression.mul (1.0 |> Expression.floatConstant) valueExp
+            let exp =
+                Expression.mul (1.0 |> Expression.floatConstant) valueExp
 
-           let actual = exp |> simplify
-
-           match actual with
-           | Constant v when v.IsZero() -> true
-           | _ -> false)
-       |> Prop.forAll (Values.numericValues |> Arb.fromGen)
+            let actual = exp |> simplify
+            let expected = valueExp
+            actual .=. expected)
+        |> Prop.forAll (Values.numericValues |> Arb.fromGen)

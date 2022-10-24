@@ -23,31 +23,27 @@ module Runner =
     let private dummyPreprocess programStr = programStr
 
     let run programString =
-        let preprocessor = preprocessComments
+        let preprocess = preprocessComments
 
-        let parserRun str =
+        let runParser str =
             let parser = Parser.Statement.pProgram
 
             match str |> run parser with
             | Success (program, _, _) -> program |> Result.Ok
             | Failure (errorMsg, _, _) -> errorMsg |> ParseError |> Error
-               
-        let optimize program = 
+
+        let optimize program =
             let expOptimizer =
-                       ExpSimplifier.simplifyNode
-                       |> ExpSimplifier.simplify >> Ok
-            program |> Ok
+                ExpSimplifier.simplifyNode
+                |> ExpSimplifier.simplify
+
+            let programOptimizer =
+                StmtSimplifier.simplifyProgram expOptimizer
+
+            program |> programOptimizer |> Ok
 
         programString
-        |> preprocessor
-        |> parserRun
+        |> preprocess
+        |> runParser
         |> Result.bind optimize
         |> Result.bind (Interpreter.run >> Result.mapError ExecuteError)
-//| Success (program, _, _) ->
-//    match Interpreter.run program with
-//    | Ok r -> r |> Ok
-//    | Error (errorValue) -> printfn "Failure: %A" errorValue
-//                            errorValue |> ExecuteError |> Error
-//| Failure (errorMsg, _, _) ->
-//    printfn "Failure: %s" errorMsg
-//    errorMsg |> ParseError |> Error
