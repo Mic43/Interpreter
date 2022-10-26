@@ -30,8 +30,8 @@ module StmtSimplifier =
                 |> VarDeclarationStatement
             | BlockStatement block -> block |> simplifyBlock |> BlockStatement
             | IfStatement ifStmt -> ifStmt |> simplifyIf
-            | WhileStatement whileStmt -> stmt
-            | ForStatement forStmt -> stmt
+            | WhileStatement whileStmt -> stmt //TODO:
+            | ForStatement forStmt -> stmt //TODO:
             | ReturnStatement exp -> exp |> simplifyExp |> ExpressionStatement
             | Empty -> stmt
 

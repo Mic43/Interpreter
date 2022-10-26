@@ -117,11 +117,11 @@ module ExpSimplifier =
 
         let simplifyBinary =
             function
+            | { LeftOperand = Constant v1
+                RightOperand = Constant v2 } as exp -> simplifyConstantBinary exp v1 v2
             | { BinaryOp = ArithmeticOp Add } as exp -> simplifyAdd exp
             | { BinaryOp = ArithmeticOp Sub } as exp -> simplifySub exp
             | { BinaryOp = ArithmeticOp Mul } as exp -> simplifyMul exp
-            | { RightOperand = Constant v1
-                LeftOperand = Constant v2 } as exp -> simplifyConstantBinary exp v1 v2
             | b -> b |> Binary
 
         match exp with

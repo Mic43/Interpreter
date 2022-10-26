@@ -10,9 +10,9 @@ open Identifier
 //open FSharpPlus.Choice
 
 module Expression =
-    let pConst = pValue |>> Constant
+    let private pConst = pValue |>> Constant
 
-    let pVar (pExpr: Parser<Expression, unit>) =
+    let private pVar (pExpr: Parser<Expression, unit>) =
 
         let parseIndexesMembersList () =
             (openSquareBracket |> trimmed >>. pExpr
@@ -36,10 +36,9 @@ module Expression =
         )
         |>> Mutable
 
+    let private pExpList pExpr = sepBy (pExpr |> trimmed) pListSeparator
 
-    let pExpList pExpr = sepBy (pExpr |> trimmed) pListSeparator
-
-    let pfunCall pExpr =
+    let private pfunCall pExpr =
         (pipe2
             (pIdentifier .>> spaces)
             (openBracket >>. spaces >>. (pExpList pExpr)
@@ -50,26 +49,26 @@ module Expression =
                   ActualParameters = actualParams }))
         |>> FunCall
 
-    let pListCreation pExpr =
+    let private pListCreation pExpr =
         openSquareBracket >>. spaces >>. (pExpList pExpr)
         .>> spaces
         .>> closeSquareBracket
         |>> ListCreation
 
-    let pInitializerList pExpr =
+    let private pInitializerList pExpr =
         sepBy
             (pipe2 (pIdentifier .>> (initVarOpKeyWord |> trimmed)) pExpr (fun i e -> (i, e))
              |> trimmed)
             pListSeparator
 
-    let pStructCreation pExpr =
+    let private pStructCreation pExpr =
         pipe2 (pIdentifier .>> (pOpenCurlyBracket |> trimmed)) (pInitializerList pExpr) (fun ident initializeList ->
             { StructTypeName = ident
               FieldsInitialization = initializeList |> Map.ofList })
         .>> pCloseCurlyBracket
         |>> UserTypeCreation
 
-    let pTermExpr pExpr =
+    let private pTermExpr pExpr =
 
         let pfunCall = pfunCall pExpr
 
@@ -79,7 +78,7 @@ module Expression =
         <|> attempt (pStructCreation pExpr)
         <|> pVar pExpr
 
-    let opp =
+    let private opp =
         new OperatorPrecedenceParser<Expression, unit, unit>()
 
     do

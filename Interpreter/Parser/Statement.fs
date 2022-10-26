@@ -10,12 +10,12 @@ module Statement =
     open Expression
     open Common
 
-    let pIdentList =
+    let private pIdentList =
         sepBy (spaces >>. pIdentifier .>> spaces) pListSeparator
 
-    let pExpr = pExpr ()
+    let private  pExpr = pExpr ()
 
-    let pFunDecl pBlock =
+    let private pFunDecl pBlock =
         funKeyword
         >>. spaces1
         >>. pipe3
@@ -27,7 +27,7 @@ module Statement =
                   Body = body
                   Parameters = parametrs })
 
-    let pVarDecl =
+    let private pVarDecl =
         pipe2
             (varKeyword >>. spaces1 >>. pIdentifier .>> spaces)
             (initVarOpKeyWord >>. spaces >>. pExpr |> opt
@@ -38,7 +38,7 @@ module Statement =
                 { VarDeclaration.Name = ident
                   InitExpression = exp })
 
-    let pStructDecl =
+    let private pStructDecl =
         pipe2
             (structKeyword
              >>. (spaces1 >>. pIdentifier .>> spaces))
@@ -54,7 +54,7 @@ module Statement =
                     |> Struct
                   Name = name })
 
-    let pIfStmt pScopedStmt =
+    let private pIfStmt pScopedStmt =
 
         let pElseBranch = elseKeyword >>. spaces >>. pScopedStmt
 
@@ -73,13 +73,13 @@ module Statement =
                   OnTrue = trueStmt
                   OnFalse = falseStmt })
 
-    let pforInit =
+    let private pforInit =
 
         ((attempt pVarDecl) |>> VarDeclarationInit)
         <|> ((pExpr .>> spaces .>> pSemicolon)
              |>> ExpressionInit)
 
-    let pForStmt pScopedStmt =
+    let private pForStmt pScopedStmt =
         pipe4
             (forKeyword
              >>. spaces
@@ -95,7 +95,7 @@ module Statement =
                   Increment = incr
                   Body = body })
 
-    let pWhileStmt pScopedStatement =
+    let private pWhileStmt pScopedStatement =
         pipe2
             (whileKeyword
              >>. spaces
@@ -107,7 +107,7 @@ module Statement =
             (spaces >>. pScopedStatement)
             (fun cond body -> { While.Condition = cond; Body = body })
 
-    let pReturnStmt =
+    let private pReturnStmt =
         returnKeyword >>. spaces >>. opt pExpr
         .>> spaces
         .>> pSemicolon
@@ -116,7 +116,7 @@ module Statement =
                 |> Option.defaultValue (Value.Void |> Constant)
                 |> ReturnStatement
 
-    let pBlock pscopedStatement =
+    let private pBlock pscopedStatement =
         pOpenCurlyBracket
         >>. spaces
         >>. (many pscopedStatement)
@@ -125,7 +125,7 @@ module Statement =
         |>> Block.Create
         <!> "block"
 
-    let pScopedStatement block (blockImpl: Parser<Block, unit> ref) =
+    let private pScopedStatement block (blockImpl: Parser<Block, unit> ref) =
         let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()
 
         let forStmt, forStmtImp =
@@ -159,7 +159,7 @@ module Statement =
 
         scopedStatement
 
-    let pStatement () =
+    let private pStatement () =
         let block, blockImpl =
             createParserForwardedToRef<Block, unit> ()
 
