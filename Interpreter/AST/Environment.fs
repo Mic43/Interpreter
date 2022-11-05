@@ -76,18 +76,6 @@ module Environment =
 
         recurse environment.CurrentEnvironment
 
-    // let tryUpdateVar (environment: ExecutionEnvironment) identifier newValue =
-    //     monad' {
-    //         let! targetEnvironment = tryFindVariableEnvironment environment identifier
-    //         targetEnvironment.Variables.[identifier].Value <- newValue
-    //         return ()
-    //     }
-    //     |> Option.toResultWith (
-    //         Errors.create
-    //             ErrorType.Other
-    //             (identifier.ToStr()
-    //              |> sprintf "variable not defined: %s")
-    //     )
     let tryGetUserType (environment: ExecutionEnvironment) identifier =
         match environment.Global.Kind with
         | Global g ->

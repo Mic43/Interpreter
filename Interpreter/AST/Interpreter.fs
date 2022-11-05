@@ -6,7 +6,6 @@ open System.Collections.Generic
 module Interpreter =
 
     let runWithDefaultEnv defaultEnvironment (Program statementsList) =
-
         let createDefaultEnvironment defaultEnvironment =
             defaultEnvironment
             |> Map.toList

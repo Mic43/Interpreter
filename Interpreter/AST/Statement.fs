@@ -74,7 +74,6 @@ and UserTypeKind = Struct of Struct
 
 and UserType =
     { Name: Identifier
-      // Id:Guid
       Kind: UserTypeKind }
 
 type Statement =
