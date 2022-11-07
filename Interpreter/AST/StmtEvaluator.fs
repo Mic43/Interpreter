@@ -10,12 +10,12 @@ module StmtEvaluator =
 
         let evaluateScopedStmtRec = evaluateScopedStmt environment
 
-        let evaluateBlock block =
+        let evaluateBlock environment block =
             Environment.nestNewEmptyEnvironment environment
 
             let res =
                 block.Content
-                |> Utils.traverseMTail evaluateScopedStmtRec
+                |> Utils.traverseMTail (evaluateScopedStmt environment) 
                 |> Result.map (fun _ -> Value.Void)
 
             do environment |> Environment.returnToParent
@@ -48,15 +48,16 @@ module StmtEvaluator =
                         |> Result.mapError (fun _ ->
                             Errors.create ErrorType.Evaluation "wrong parameters count"
                             |> EvalError)
-
-                    Environment.nestNewEnvironment environment (paramsWithValues |> Map.ofSeq)
+                    
+                    let newEnvironment = Environment.create environment.Global
+                    Environment.nestNewEnvironment newEnvironment (paramsWithValues |> Map.ofSeq)
 
                     let! res =
                         func.Body
-                        |> evaluateBlock
+                        |> evaluateBlock newEnvironment
                         |> Value.getReturnedValue
 
-                    environment |> Environment.returnToParent
+                   // environment |> Environment.returnToParent
 
                     return res
                 | CompiledFunction compiledFun ->
@@ -159,7 +160,7 @@ module StmtEvaluator =
 
         match exp with
         | ExpressionStatement exp -> exp |> evaluateExpression
-        | BlockStatement block -> block |> evaluateBlock
+        | BlockStatement block -> block |> evaluateBlock environment
         | VarDeclarationStatement vd -> vd |> evaluateVarDeclaration
         | IfStatement (ifs) ->
             monad' {

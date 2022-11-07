@@ -18,7 +18,6 @@ module DefaultEnvironment =
             printfn ""
             return v
         }
-
     let tryReadInt (parametersList: Value list) =
         if not parametersList.IsEmpty then
             "Wrong parameter count"

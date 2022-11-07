@@ -94,7 +94,7 @@ module ExpEvaluator =
                             |> Errors.createResult Other
                         |> Result.mapError EvalError
                 }
-            | MemmberAccess (var, field) ->
+            | MemberAccess (var, field) ->
                 monad' {
                     let! value = mutableExpEvaluator var
 
@@ -153,8 +153,7 @@ module ExpEvaluator =
             mutableExpEvaluator m
             |> Result.map (fun r -> r.Value)
         | Assignment (mutableExpr, expr) -> assignmentEvaluator mutableExpr expr
-        | Binary b ->
-            //TODO: parallelize? not possible because of side effects via environment
+        | Binary b ->            
             let leftVal = (tryEvaluateRec b.LeftOperand)
             let rightVal = (tryEvaluateRec b.RightOperand)
 

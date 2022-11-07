@@ -26,8 +26,8 @@ module Printer =
                 (b.LeftOperand |> expressionToStr)
                 (b.BinaryOp |> operatorToStr)
                 (b.RightOperand |> expressionToStr)
-        | SimpleUnary (_, _) -> failwith "Not Implemented"
-        | Assignment (_, _) -> failwith "Not Implemented"
+        | SimpleUnary _ -> failwith "Not Implemented"
+        | Assignment _ -> failwith "Not Implemented"
         | FunCall fc ->
             sprintf
                 "%s(%s)"
@@ -35,7 +35,7 @@ module Printer =
                 (fc.ActualParameters
                  |> (List.map expressionToStr)
                  |> List.reduce (fun acc s -> acc + "," + s))
-        | Mutable (me) ->
+        | Mutable me ->
             match me with
             | Var ident -> ident |> Identifier.toStr
 

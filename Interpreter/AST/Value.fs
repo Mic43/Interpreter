@@ -1,9 +1,6 @@
 namespace Interpreter.AST
 
 open FSharpPlus
-open System.Collections.Generic
-open System.Linq
-open FSharpPlus
 
 type StructValue =
     { TypeName: Identifier
@@ -25,7 +22,7 @@ and Value =
         | FloatValue 0.0 -> true
         | BoolValue false -> true
         | StringValue "" -> true
-        | ListValue ([]) -> true
+        | ListValue [] -> true
         | _ -> false
 
     member this.ToBool() =
@@ -40,8 +37,8 @@ and Value =
         | IntValue i -> sprintf "%d" i
         | FloatValue f -> sprintf "%f" f
         | VoidValue _ -> "null"
-        | BoolValue (b) -> sprintf "%b" b
-        | StringValue (s) -> s
+        | BoolValue b -> sprintf "%b" b
+        | StringValue s -> s
         | ListValue lv ->
             if lv.Length <> 0 then
                 lv
@@ -50,7 +47,7 @@ and Value =
                 |> sprintf "[%s]"
             else
                 ""
-        | StructValue (sv) -> $"%A{sv.TypeName} %A{sv.Fields}"
+        | StructValue sv -> $"%A{sv.TypeName} %A{sv.Fields}"
 
     member this.ToFloat() =
         match this with
@@ -119,9 +116,9 @@ module Value =
         v2
         =
         match (v1, v2) with
-        | (IntValue v1, IntValue v2) -> (opInt v1 v2) |> resultConvInt |> Result.Ok
-        | (ListValue _, _)
-        | (_, ListValue _) ->
+        | IntValue v1, IntValue v2 -> (opInt v1 v2) |> resultConvInt |> Result.Ok
+        | ListValue _, _
+        | _, ListValue _ ->
             monad' {
                 let! opList = opList
                 let! resultConvList = resultConvList
@@ -134,8 +131,8 @@ module Value =
                 "Operation is not supported for list types"
                 |> (Errors.create Other)
             )
-        | (StringValue _, _)
-        | (_, StringValue _) ->
+        | StringValue _, _
+        | _, StringValue _ ->
             monad' {
                 let! opString = opString
                 let! resultConvString = resultConvString
@@ -147,11 +144,11 @@ module Value =
                 |> (Errors.create Other)
             )
 
-        | (VoidValue _, _)
-        | (_, VoidValue _) ->
+        | VoidValue _, _
+        | _, VoidValue _ ->
             "cannot convert void to float"
             |> (Errors.createResult Other)
-        | (_, _) ->
+        | _, _ ->
             opFloat (v1 |> toFloat) (v2 |> toFloat)
             |> resultConvFloat
             |> Ok
@@ -182,7 +179,7 @@ module Value =
     let (.&&) v1 v2 = computeLogical (&&) v1 v2
     let (.||) v1 v2 = computeLogical (||) v1 v2
 
-    let (~-) (v: Value) = ((-1) |> IntValue) * v
+    let (~-) (v: Value) = (-1 |> IntValue) * v
 
     let (!) (v: Value) =
         not (v.ToBool()) |> BoolValue |> Result.Ok

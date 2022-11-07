@@ -16,7 +16,7 @@ module Interpreter =
             |> Map.ofList
             |> Dictionary
             |> Environment.CreateGlobal
-
+        
         let environment =
             Environment.create (createDefaultEnvironment defaultEnvironment)
 

@@ -1,6 +1,5 @@
 ﻿namespace Interpreter.AST
 
-open System
 open FSharpPlus
 
 type VarDeclaration =
@@ -52,7 +51,7 @@ type Function =
 
 type CompiledFunction =
     { Name: Identifier
-      Execute: (Value list -> Result<Value, ExecuteError>) }
+      Execute: Value list -> Result<Value, ExecuteError> }
 
 type Callable =
     | Function of Function
@@ -120,8 +119,9 @@ module Statement =
         |> IfStatement
         |> ScopedStatement
 
-    let funDeclare name paramters body =
+    let funDeclare name parameters body =
         { Function.Name = name |> Identifier.create
-          Parameters = paramters |> List.map Identifier.create
+          Parameters = parameters |> List.map Identifier.create
           Body = body }
         |> FunDeclaration
+

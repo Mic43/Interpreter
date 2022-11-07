@@ -2,7 +2,6 @@
 
 open FParsec
 open Interpreter.AST
-open Interpreter.AST
 
 module Statement =
     open Identifier
@@ -22,10 +21,10 @@ module Statement =
             (pIdentifier .>> spaces .>> openBracket)
             (spaces >>. pIdentList .>> spaces .>> closeBracket)
             (spaces >>. pBlock .>> spaces)
-            (fun name parametrs body ->
+            (fun name parameters body ->
                 { Name = name
                   Body = body
-                  Parameters = parametrs })
+                  Parameters = parameters })
 
     let private pVarDecl =
         pipe2

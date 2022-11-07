@@ -30,7 +30,7 @@ module Expression =
                  (fun mutExp exp ->
                      match exp with
                      | Choice1Of2 indexExp -> (mutExp, indexExp) |> IndexedVar
-                     | Choice2Of2 (fieldIdentifier) -> (mutExp, fieldIdentifier) |> MemmberAccess)
+                     | Choice2Of2 (fieldIdentifier) -> (mutExp, fieldIdentifier) |> MemberAccess)
                  ident
 
         )

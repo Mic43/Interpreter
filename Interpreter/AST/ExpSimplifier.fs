@@ -64,41 +64,7 @@ module ExpSimplifier =
                 RightOperand = right } when v.IsZero() -> right
             | { RightOperand = Constant v
                 LeftOperand = left } when v.IsZero() -> left
-            //| { LeftOperand = Binary ({ LeftOperand = a
-            //                            RightOperand = b
-            //                            BinaryOp = ArithmeticOp Mul })
-            //    RightOperand = Binary ({ LeftOperand = a2
-            //                             RightOperand = c
-            //                             BinaryOp = ArithmeticOp Mul }) }
-            //| { LeftOperand = Binary ({ LeftOperand = b
-            //                            RightOperand = a
-            //                            BinaryOp = ArithmeticOp Mul })
-            //    RightOperand = Binary ({ LeftOperand = a2
-            //                             RightOperand = c
-            //                             BinaryOp = ArithmeticOp Mul }) }
-            //| { LeftOperand = Binary ({ LeftOperand = a
-            //                            RightOperand = b
-            //                            BinaryOp = ArithmeticOp Mul })
-            //    RightOperand = Binary ({ LeftOperand = c
-            //                             RightOperand = a2
-            //                             BinaryOp = ArithmeticOp Mul }) }
-            //| { LeftOperand = Binary ({ LeftOperand = b
-            //                            RightOperand = a
-            //                            BinaryOp = ArithmeticOp Mul })
-            //    RightOperand = Binary ({ LeftOperand = c
-            //                             RightOperand = a2
-            //                             BinaryOp = ArithmeticOp Mul }) } when
-
-            //    a = a2
-            //    ->
-
-            //    (a,
-            //     (b, c)
-            //     ||> Expression.binary (ArithmeticOp Add)
-            //     |> simplifyNode)
-
-            //    ||> Expression.binary (ArithmeticOp Mul)
-            //    |> simplifyNode
+          
             //(a*b) + (c*d)                                      _*(_+_)
             | MulDistributivity (a, b, c, d) when a = c -> simplifiedDistributivity a b d
             | MulDistributivity (a, b, c, d) when a = d -> simplifiedDistributivity a b c

@@ -34,7 +34,7 @@ type ExecutionEnvironment =
     member this.IsCurrentGlobal =
         match this.Current.Kind with
         | Global _ -> true
-        | _ -> false
+        | Scoped _ -> false
 
 module Environment =
 

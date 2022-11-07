@@ -1,5 +1,6 @@
 module ParserTests
 
+open System.Globalization
 open Xunit
 open Interpreter.AST
 open Interpreter.AST.Errors
@@ -249,7 +250,7 @@ module Variables =
 
 module Structs =
     [<Property>]
-    let ``declaration of empty struct is poosible`` () =
+    let ``declaration of empty struct is possible`` () =
         let str =
             $"
                 struct aaa1 {{   }}
@@ -261,7 +262,7 @@ module Structs =
         actual .=. expected
 
     [<Property>]
-    let ``declaration of one member struct without initializer is poosible`` () =
+    let ``declaration of one member struct without initializer is possible`` () =
         let str =
             $"
                 struct ssss2 {{ var inner;  }}
@@ -273,7 +274,7 @@ module Structs =
         actual .=. expected
 
     [<Property>]
-    let ``declaration of one member struct with simple initializer is poosible`` () =
+    let ``declaration of one member struct with simple initializer is possible`` () =
         let str =
             $"
                 struct ssss4 {{ var inner = 5;  }}
@@ -285,7 +286,7 @@ module Structs =
         actual .=. expected
 
     [<Property>]
-    let ``declaration of one member struct with  initializer referring to global var is poosible`` () =
+    let ``declaration of one member struct with  initializer referring to global var is possible`` () =
         let str =
             $"
                 var global = 10;
@@ -298,7 +299,7 @@ module Structs =
         actual .=. expected
 
     [<Property>]
-    let ``declaration of struct with many members is posible`` () =
+    let ``declaration of struct with many members is possible`` () =
         let str =
             $"
                 struct ssss4 {{
@@ -315,7 +316,7 @@ module Structs =
         actual .=. expected
 
     [<Property>]
-    let ``declaration of struct with many members with initializers is posible`` () =
+    let ``declaration of struct with many members with initializers is possible`` () =
         let str =
             $"
                 var z = 12;
@@ -654,3 +655,101 @@ module Structs =
             |> Ok
 
         actual .=. expected
+
+module Functions =
+    
+    [<Fact>]
+    let ``parameters are passed to functions by value for floats``() =                
+        
+        let nfi = NumberFormatInfo();
+        nfi.NumberDecimalSeparator <- ".";
+        
+        let localParamValue:float = 0.1;
+        
+        let program =
+            $"""         
+            fun foo(x) {{x=0;}}
+                    
+            var localVar = {localParamValue.ToString(nfi)};   
+            foo(localVar);
+            localVar;
+            """
+        let actual = Interpreter.Runner.run program
+        let expected = localParamValue |> FloatValue |> Ok
+        
+        Assert.Equal(expected , actual)
+    
+    [<Property>]
+    let ``parameters are passed to functions by value for ints`` (localParamValue:int) =                
+        let program =
+            $"         
+            fun foo(x) {{x=0;}}
+                    
+            var localVar = {localParamValue};   
+            foo(localVar);
+            localVar;
+            "
+        let actual = Interpreter.Runner.run program
+        let expected = localParamValue |> IntValue |> Ok
+        
+        expected .=. actual
+
+    [<Property>]
+    let ``function parameters shadow global variables`` (actualParamValue:int) (globalVarValue:int) =                
+        let program =
+            $"
+            var x = {globalVarValue};
+            fun foo(x) {{x=5;}}
+                       
+            foo({actualParamValue});
+            x;
+            "
+        let actual = Interpreter.Runner.run program
+        let expected = globalVarValue |> IntValue |> Ok
+        
+        expected .=. actual
+    
+    [<Fact>]
+    let ``accessing variable from function caller scope causes error``() =
+        let program =
+            $"fun foo() {{x=5;}}
+            
+            fun foo2() {{
+                var x = 10;
+                foo();
+            }}
+            foo2();
+            "
+        let actual = Interpreter.Runner.run program
+      
+        Assert.True (match actual with
+                       | Ok _ -> false
+                       | Error _ -> true)
+
+    [<Fact>]      
+    let ``accessing non existing variable from function causes error``() =
+        let program =
+            $"fun foo() {{y=5;}}
+            var x = 10;
+            foo();
+            "
+        let actual = Interpreter.Runner.run program
+      
+        Assert.True (match actual with
+                       | Ok _ -> false
+                       | Error _ -> true)
+        
+    [<Property>]  
+    let ``accessing global variable from function works correctly`` v =        
+        let program =            
+            $"
+            var z = 5;
+            fun foo() {{z={v};}}            
+            foo();
+            z;
+            "
+        let actual = Interpreter.Runner.run program
+        let expected = v |> Value.IntValue |> Ok
+        
+        actual .=.expected
+       
