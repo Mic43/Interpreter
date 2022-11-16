@@ -21,7 +21,7 @@ module Interpreter =
             Environment.create (createDefaultEnvironment defaultEnvironment)
 
         statementsList
-        |> Utils.traverseMTail (StmtEvaluator.evaluate environment)
+        |> Traversable.traverseMTail (StmtEvaluator.evaluate environment)
         |> Value.getLastResultOrVoid
 
     let run program =

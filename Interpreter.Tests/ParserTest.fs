@@ -3,7 +3,7 @@ module ParserTests
 open System.Globalization
 open Xunit
 open Interpreter.AST
-open Interpreter.AST.Errors
+open Interpreter.AST.ExecuteError
 open FsCheck
 open FsCheck.Xunit
 open FSharpPlus
@@ -19,7 +19,7 @@ module Variables =
             z;
         "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = value |> IntValue |> Ok
         actual = expected
 
@@ -31,7 +31,7 @@ module Variables =
             z[0];
         "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = value |> IntValue |> Ok
         actual = expected
 
@@ -43,7 +43,7 @@ module Variables =
             z[0];
         "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             value.ToString().[0].ToString()
@@ -61,7 +61,7 @@ module Variables =
                 v[1][1];
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected = value |> IntValue |> Ok
 
@@ -75,7 +75,7 @@ module Variables =
                 v[0][0];
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             value.ToString().[0].ToString()
@@ -92,7 +92,7 @@ module Variables =
                 v[0][0];
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected = value.Get |> IntValue |> Ok
 
@@ -107,7 +107,7 @@ module Variables =
                 v;
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected = after |> IntValue |> Ok
 
@@ -126,7 +126,7 @@ module Variables =
                 v[{index}];
             "
 
-            let actual = Interpreter.Runner.run str
+            let actual = Interpreter.Executor.run str
 
             let expected = after |> IntValue |> Ok
 
@@ -148,7 +148,7 @@ module Variables =
                 v[{i1}][{i2}];
             "
 
-            let actual = Interpreter.Runner.run str
+            let actual = Interpreter.Executor.run str
 
             let expected = after |> IntValue |> Ok
 
@@ -163,7 +163,7 @@ module Variables =
             [z,v];
         "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             [ after |> IntValue; after |> IntValue ]
@@ -181,7 +181,7 @@ module Variables =
             [++z[1],z[1]];
         "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let after = before + 1
 
         let expected =
@@ -200,7 +200,7 @@ module Variables =
             [z[0]++,z[0]];
         "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let after = before + 1
 
         let expected =
@@ -220,7 +220,7 @@ module Variables =
             z;
         "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected = Value.Void |> Ok
 
@@ -239,14 +239,11 @@ module Variables =
             z[ {l.Length} ];
         "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         match actual with
-        | Ok (_) -> false
-        | Error (re) ->
-            match re with
-            | Interpreter.ExecuteError _ -> true
-            | _ -> false
+        | Ok _ -> false
+        | Error _ -> true            
 
 module Structs =
     [<Property>]
@@ -256,7 +253,7 @@ module Structs =
                 struct aaa1 {{   }}
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = Value.Void |> Ok
 
         actual .=. expected
@@ -268,7 +265,7 @@ module Structs =
                 struct ssss2 {{ var inner;  }}
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = Value.Void |> Ok
 
         actual .=. expected
@@ -280,7 +277,7 @@ module Structs =
                 struct ssss4 {{ var inner = 5;  }}
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = Value.Void |> Ok
 
         actual .=. expected
@@ -293,7 +290,7 @@ module Structs =
                 struct ssss4 {{ var inner = global;  }}
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = Value.Void |> Ok
 
         actual .=. expected
@@ -308,9 +305,8 @@ module Structs =
                      var iner3 = 11.4;
                      var inner4 = 5;
                 }}
-            "
-
-        let actual = Interpreter.Runner.run str
+            "        
+        let actual = Interpreter.Executor.run str
         let expected = Value.Void |> Ok
 
         actual .=. expected
@@ -328,7 +324,7 @@ module Structs =
                 }}
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = Value.Void |> Ok
 
         actual .=. expected
@@ -342,7 +338,7 @@ module Structs =
                 }}
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = Value.Void |> Ok
 
         actual .=. expected
@@ -357,7 +353,7 @@ module Structs =
                 }}
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = Value.Void |> Ok
 
         actual .=. expected
@@ -374,7 +370,7 @@ module Structs =
                 z;
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             Value.createEmptyStructInstance strName |> Ok
@@ -403,7 +399,7 @@ module Structs =
                 z;
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             strName
@@ -436,7 +432,7 @@ module Structs =
                 z;
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             strName
@@ -463,7 +459,7 @@ module Structs =
                 z;
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             strName
@@ -496,7 +492,7 @@ module Structs =
                 z;
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             strName
@@ -523,7 +519,7 @@ module Structs =
                 z.{fieldName};
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = oldValue |> Value.IntValue |> Ok
 
         actual .=. expected
@@ -543,7 +539,7 @@ module Structs =
                 z;
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             strName
@@ -575,7 +571,7 @@ module Structs =
                 z.{fieldName}.{nestedFieldName};
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = oldValue |> IntValue |> Ok
 
         actual .=. expected
@@ -600,7 +596,7 @@ module Structs =
                 z;
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             strName
@@ -625,7 +621,7 @@ module Structs =
                 struct ssss4 {{ var inner1 = 5; var inner2 = inner1;  }}
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
         let expected = Value.Void |> Ok
 
         actual .=. expected
@@ -643,7 +639,7 @@ module Structs =
                 z;
             "
 
-        let actual = Interpreter.Runner.run str
+        let actual = Interpreter.Executor.run str
 
         let expected =
             strName
@@ -674,7 +670,7 @@ module Functions =
             foo(localVar);
             localVar;
             """
-        let actual = Interpreter.Runner.run program
+        let actual = Interpreter.Executor.run program
         let expected = localParamValue |> FloatValue |> Ok
         
         Assert.Equal(expected , actual)
@@ -689,7 +685,7 @@ module Functions =
             foo(localVar);
             localVar;
             "
-        let actual = Interpreter.Runner.run program
+        let actual = Interpreter.Executor.run program
         let expected = localParamValue |> IntValue |> Ok
         
         expected .=. actual
@@ -704,7 +700,7 @@ module Functions =
             foo({actualParamValue});
             x;
             "
-        let actual = Interpreter.Runner.run program
+        let actual = Interpreter.Executor.run program
         let expected = globalVarValue |> IntValue |> Ok
         
         expected .=. actual
@@ -720,7 +716,7 @@ module Functions =
             }}
             foo2();
             "
-        let actual = Interpreter.Runner.run program
+        let actual = Interpreter.Executor.run program
       
         Assert.True (match actual with
                        | Ok _ -> false
@@ -733,7 +729,7 @@ module Functions =
             var x = 10;
             foo();
             "
-        let actual = Interpreter.Runner.run program
+        let actual = Interpreter.Executor.run program
       
         Assert.True (match actual with
                        | Ok _ -> false
@@ -748,7 +744,7 @@ module Functions =
             foo();
             z;
             "
-        let actual = Interpreter.Runner.run program
+        let actual = Interpreter.Executor.run program
         let expected = v |> Value.IntValue |> Ok
         
         actual .=.expected

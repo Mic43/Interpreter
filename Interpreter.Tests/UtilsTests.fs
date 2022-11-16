@@ -28,25 +28,25 @@ module Traverse =
     [<Property>]
     let ``Tail recursive and standard versions yield same results for Ints and no preserving errors`` (lst: int list) =
 
-        (lst |> Utils.traverseATail isEven)
-        .=. (lst |> Utils.traverseA isEven)
+        (lst |> Traversable.traverseATail isEven)
+        .=. (lst |> Traversable.traverseA isEven)
 
     [<Property>]
     let ``Moandic and applicative versions yields same results for ints`` (lst: int list) =
-        (lst |> Utils.traverseM isEven)
-        .=. (lst |> Utils.traverseA isEven)
+        (lst |> Traversable.traverseM isEven)
+        .=. (lst |> Traversable.traverseA isEven)
 
     [<Property>]
     let ``Custom and standard versions yield same results for Ints`` (lst: int list) =
 
-        (lst |> Utils.traverseResultA isEven)
-        .=. (lst |> Utils.traverseA isEven)
+        (lst |> Traversable.traverseResultA isEven)
+        .=. (lst |> Traversable.traverseA isEven)
 
     [<Property>]
     let ``Monadic and tailrecusive yields same results for Ints`` (lst: int list) =
 
-        (lst |> Utils.traverseM isEven)
-        .=. (lst |> Utils.traverseMTail isEven)
+        (lst |> Traversable.traverseM isEven)
+        .=. (lst |> Traversable.traverseMTail isEven)
 
     // [<Property>]
     // let ``Monadic tail recurisve returns empty when stop condition is always true and mapper retuns ok, for ints``
@@ -62,8 +62,8 @@ module Traverse =
     let ``Aplicative traverse using fold is equal to traverse for ints``
         (lst: int list)
         =       
-        (lst |> Utils.traverseA isEven)
-              .=. (lst |> Utils.traverseAUsingFold isEven)
+        (lst |> Traversable.traverseA isEven)
+              .=. (lst |> Traversable.traverseAUsingFold isEven)
 
     // [<Property>]
     // let ``Monadic tail recurisve stops in correct position, for ints`` (lst: int list) =

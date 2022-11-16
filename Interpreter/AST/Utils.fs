@@ -1,8 +1,7 @@
 ﻿namespace Interpreter.AST
-
 open FSharpPlus
 
-module Utils =
+module Traversable =
     let traverseAUsingFold<'T, 'U, 'Error> (mapper: 'T -> Result<'U, 'Error>) (lst: 'T list) =
         (List.foldBack
             (fun t s ->
@@ -79,7 +78,6 @@ module Utils =
 
             }
 
-
     let traverseMTailUntil<'T, 'U, 'Error>
         stopCondition
         (mapper: 'T -> Result<'U, 'Error>)
@@ -104,3 +102,53 @@ module Utils =
 
     let traverseMTail<'T, 'U, 'Error> (mapper: 'T -> Result<'U, 'Error>) (lst: 'T list) : Result<'U list, 'Error> =
         traverseMTailUntil (fun _ -> false) mapper lst
+
+[<RequireQualifiedAccess>]
+module Continuation =
+    type Cont<'T, 'U> =
+        | Cont of (('T -> 'U) -> 'U)
+        member this.run conFun =
+            match this with
+            | Cont f -> f conFun
+
+    let run  conFun (cont:Cont<'T, 'U>) = cont.run conFun 
+    let ret t : Cont<'T, 'U> = (fun cnt -> t |> cnt) |> Cont
+    let fromFun f = f |> Cont
+    let map (f: 'T -> 'V) (cont: Cont<'T, 'U>) =
+        (fun cntFun -> (fun t -> t |> f |> cntFun) |> cont.run)
+        |> Cont
+
+    let join (contCont: Cont<Cont<'T, 'U>, 'U>) : Cont<'T, 'U> =
+        fun (cnt: 'T -> 'U) ->
+            let tmp =
+                fun (innerCnt: Cont<'T, 'U>) -> innerCnt.run cnt
+
+            contCont.run tmp
+        |> Cont
+
+    let bind f cont = cont |> map f |> join
+    
+    
+   
+    
+[<AutoOpen>]    
+module ComputationExpression =
+    
+    type ContinuationBuilder() =
+        member x.Bind(comp, func) = Continuation.bind func comp
+        member x.Return(value) = Continuation.ret value
+        member x.ReturnFrom(value) = value
+
+
+    let continuation = new ContinuationBuilder()
+
+module TraversableContinuationList =
+     let rec sequence fs =
+        continuation {
+            match fs with
+            | [] -> return []
+            | head :: tail ->
+                let! result = head
+                let! results = sequence tail
+                return result :: results
+        }

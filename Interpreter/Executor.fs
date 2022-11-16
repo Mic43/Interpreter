@@ -7,11 +7,11 @@ open FParsec.CharParsers
 open FSharpPlus
 
 
-type RunnerError =
-    | ExecuteError of ExecuteError
-    | ParseError of string
+// type RunnerError =
+//     | ExecuteError of ExecuteError
+//     | ParseError of string
 
-module Runner =
+module Executor =
     let private preprocessComments programStr =
         let comment = "//"
 
@@ -30,7 +30,7 @@ module Runner =
 
             match str |> run parser with
             | Success (program, _, _) -> program |> Result.Ok
-            | Failure (errorMsg, _, _) -> errorMsg |> ParseError |> Error
+            | Failure (errorMsg, _, _) -> errorMsg |> ExecuteError.createResult ErrorType.ParseError
 
         let optimize program =
             let expOptimizer =
@@ -46,4 +46,4 @@ module Runner =
         |> preprocess
         |> runParser
         |> Result.bind optimize
-        |> Result.bind (Interpreter.run >> Result.mapError ExecuteError)
+        |> Result.bind Interpreter.run

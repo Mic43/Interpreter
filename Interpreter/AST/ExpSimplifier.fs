@@ -19,15 +19,15 @@ module ExpSimplifier =
                                      BinaryOp = ArithmeticOp Mul })
             BinaryOp = ArithmeticOp Add } -> Some((a, b, c, d))
         | _ -> None
-
+    
     let rec simplifyNode exp =
         let simplifyUnary =
             function
-            | (op, Constant v) as exp ->
+            | op, Constant v as exp ->
                 ExpEvaluator.unaryOpEvaluator op v
                 |> Result.map Constant
                 |> Result.defaultValue (exp |> SimpleUnary)
-            | (op, exp) -> (op, exp) |> SimpleUnary
+            | op, exp -> (op, exp) |> SimpleUnary
 
         let simplifyConstantBinary exp v1 v2 =
             ExpEvaluator.binaryOpEvaluator exp.BinaryOp v1 v2
@@ -116,7 +116,7 @@ module ExpSimplifier =
          | FunCall ({ ActualParameters = actualParamsExps } as funcCall) ->
              { funcCall with ActualParameters = actualParamsExps |> List.map simplify }
              |> FunCall
-         | Mutable (IndexedVar (mexp, exp)) -> (mexp, exp |> simplify) |> IndexedVar |> Mutable
+         | Mutable (IndexedVar (mexp, exp)) -> (mexp, exp |> simplify) |> IndexedVar |> Mutable 
          | Mutable _ -> exp
          | Constant _ -> exp)
         |> simplifyNode

@@ -20,7 +20,7 @@ module Printer =
     let rec expressionToStr (exp: Expression) =
         match exp with
         | Constant c -> c |> Value.toStr
-        | Binary (b) ->
+        | Binary b ->
             sprintf
                 "%s %s %s"
                 (b.LeftOperand |> expressionToStr)
@@ -44,11 +44,11 @@ module Printer =
         let initializerToStr initializer =
             match initializer with
             | ExpressionInit ei -> ei |> expressionToStr
-            | VarDeclarationInit (vd) -> vd |> VarDeclarationStatement |> scopedStmtToStr
+            | VarDeclarationInit vd -> vd |> VarDeclarationStatement |> scopedStmtToStr
 
         match stmt with
         | ExpressionStatement e -> expressionToStr e
-        | VarDeclarationStatement (vd) ->
+        | VarDeclarationStatement vd ->
             sprintf
                 "%s = %s"
                 (vd.Name |> Identifier.toStr)

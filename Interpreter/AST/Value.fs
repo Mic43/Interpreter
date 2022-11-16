@@ -63,7 +63,7 @@ and Value =
         | v -> ref v |> List.singleton
 
 type EvalStopped =
-    | EvalError of ExecuteError
+    | ExecuteError of ExecuteError
     | ReturnStmtReached of Value
 
 module Value =
@@ -97,7 +97,7 @@ module Value =
         |> Result.bindError (fun e ->
             match e with
             | ReturnStmtReached value -> value |> Ok
-            | EvalError e -> e |> EvalError |> Error)
+            | ExecuteError e -> e |> ExecuteError |> Error)
 
     let toFloat (v: Value) = v.ToFloat()
     let toBool (v: Value) = v.ToBool()
@@ -129,7 +129,7 @@ module Value =
             }
             |> Option.toResultWith (
                 "Operation is not supported for list types"
-                |> (Errors.create Other)
+                |> (ExecuteError.create RuntimeError)
             )
         | StringValue _, _
         | _, StringValue _ ->
@@ -141,13 +141,13 @@ module Value =
             }
             |> Option.toResultWith (
                 "Operation is not supported for string types"
-                |> (Errors.create Other)
+                |> (ExecuteError.create RuntimeError)
             )
 
         | VoidValue _, _
         | _, VoidValue _ ->
             "cannot convert void to float"
-            |> (Errors.createResult Other)
+            |> (ExecuteError.createResult RuntimeError)
         | _, _ ->
             opFloat (v1 |> toFloat) (v2 |> toFloat)
             |> resultConvFloat

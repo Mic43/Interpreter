@@ -14,20 +14,20 @@ module ExpEvaluator =
     let binaryOpEvaluator op (val1: Value) (val2: Value) =
         let evalArithmeticExp val1 val2 =
             function
-            | (Add _) -> (val1 + val2)
-            | (Sub _) -> (val1 - val2)
-            | (Mul _) -> (val1 * val2)
-            | (Div _) -> (val1 / val2)
+            | Add _ -> (val1 + val2)
+            | Sub _ -> (val1 - val2)
+            | Mul _ -> (val1 * val2)
+            | Div _ -> (val1 / val2)
 
         let evalArithmeticExp op =
             try
                 (evalArithmeticExp val1 val2 op)
-                |> Result.mapError EvalError
+                |> Result.mapError ExecuteError
             with
             | _ ->
                 "Arithmetic error"
-                |> (Errors.createResult Other)
-                |> Result.mapError EvalError
+                |> (ExecuteError.createResult RuntimeError)
+                |> Result.mapError ExecuteError
 
         let evalLogicalExp op =
             match op with
@@ -39,7 +39,7 @@ module ExpEvaluator =
              | Equal -> val1 .== val2
              | Greater -> val1 .> val2
              | Less -> val1 .< val2)
-            |> Result.mapError EvalError
+            |> Result.mapError ExecuteError
 
         match op with
         | ArithmeticOp op -> (evalArithmeticExp op)
@@ -50,7 +50,7 @@ module ExpEvaluator =
         match op with
         | Negate -> !value
         | Minus -> -(value)
-        |> Result.mapError EvalError
+        |> Result.mapError ExecuteError
 
     let rec tryEvaluate
      //   (userTypeFinder: Identifier -> Result<UserType, RunError>)
@@ -69,7 +69,7 @@ module ExpEvaluator =
         let rec mutableExpEvaluator mutableExpr : Result<Ref<Value>, EvalStopped> =
 
             match mutableExpr with
-            | Var v -> varEvaluator v |> Result.mapError EvalError
+            | Var v -> varEvaluator v |> Result.mapError ExecuteError
             | IndexedVar (ident, exp) ->
                 monad' {
                     let! index = exp |> tryEvaluateRec
@@ -77,22 +77,22 @@ module ExpEvaluator =
 
                     return!
                         match (value.Value, index) with
-                        | (ListValue lv, IntValue index) ->
+                        | ListValue lv, IntValue index ->
                             if index < lv.Length then
                                 lv.[index] |> Ok
                             else
                                 $"array index out of bounds: {index}"
-                                |> Errors.createResult Other
-                        | (StringValue s, IntValue index) ->
+                                |> ExecuteError.createResult RuntimeError
+                        | StringValue s, IntValue index ->
                             if index < s.Length then
                                 ref (s.[index] |> string |> StringValue) |> Ok
                             else
                                 $"string index out of bounds: {index}"
-                                |> Errors.createResult Other
+                                |> ExecuteError.createResult RuntimeError
                         | _ ->
                             "indexing expression must evaluate to int"
-                            |> Errors.createResult Other
-                        |> Result.mapError EvalError
+                            |> ExecuteError.createResult RuntimeError
+                        |> Result.mapError ExecuteError
                 }
             | MemberAccess (var, field) ->
                 monad' {
@@ -100,12 +100,12 @@ module ExpEvaluator =
 
                     return!
                         match value.Value with
-                        | (StructValue sv) ->
+                        | StructValue sv ->
                             sv.Fields
                             |> Map.tryFind field
-                            |> Option.toResultWith (Errors.create Other $"Cannot find member: {field}")
-                        | _ -> "left side of member access operator must be struct" |> Errors.createResult Other
-                        |> Result.mapError EvalError
+                            |> Option.toResultWith (ExecuteError.create RuntimeError $"Cannot find member: {field}")
+                        | _ -> "left side of member access operator must be struct" |> ExecuteError.createResult RuntimeError
+                        |> Result.mapError ExecuteError
                 }
 
         let assignmentEvaluator mutableExpr expr =
@@ -121,8 +121,8 @@ module ExpEvaluator =
                 }
             | _ ->
                 "Left operand of assignment expression must be LValue"
-                |> Errors.createResult Other
-                |> Result.mapError EvalError
+                |> ExecuteError.createResult RuntimeError
+                |> Result.mapError ExecuteError
 
         let incrementEvaluator op exp =
             match exp with
@@ -133,7 +133,7 @@ module ExpEvaluator =
 
                     let! newValue =
                         (oldValue + (1 |> IntValue))
-                        |> Result.mapError EvalError
+                        |> Result.mapError ExecuteError
 
                     valueRef.Value <- newValue
 
@@ -144,8 +144,8 @@ module ExpEvaluator =
                 }
             | _ ->
                 "Left operand of assignment expression must be LValue"
-                |> Errors.createResult Other
-                |> Result.mapError EvalError
+                |> ExecuteError.createResult RuntimeError
+                |> Result.mapError ExecuteError
 
         match expression with
         | Constant c -> constEvaluator c
@@ -171,15 +171,15 @@ module ExpEvaluator =
         | FunCall fc ->
             let parametersValues =
                 fc.ActualParameters
-                |> Utils.traverseM tryEvaluateRec
+                |> Traversable.traverseM tryEvaluateRec
 
             parametersValues
             |> Result.bind (fun v -> v |> funEvaluator fc.Name)
         | Increment (op, exp) -> incrementEvaluator op exp
-        | ListCreation (expList) ->
+        | ListCreation expList ->
             expList
-            |> (Utils.traverseM tryEvaluateRec)
+            |> (Traversable.traverseM tryEvaluateRec)
             |> Result.map (fun l -> l |> List.map (fun i -> ref i) |> ListValue)
-        | UserTypeCreation (userTypeExp) ->
+        | UserTypeCreation userTypeExp ->
             evalUserTypeCreation userTypeExp
         

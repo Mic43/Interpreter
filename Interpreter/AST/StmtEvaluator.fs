@@ -15,7 +15,7 @@ module StmtEvaluator =
 
             let res =
                 block.Content
-                |> Utils.traverseMTail (evaluateScopedStmt environment) 
+                |> Traversable.traverseMTail (evaluateScopedStmt environment) 
                 |> Result.map (fun _ -> Value.Void)
 
             do environment |> Environment.returnToParent
@@ -32,11 +32,11 @@ module StmtEvaluator =
                     (funcs.TryGetValue funIdentifier)
                     |> Option.ofPair
                     |> Option.toResultWith (
-                        (Errors.create
-                            ErrorType.Other
+                        (ExecuteError.create
+                            ErrorType.RuntimeError
                             (funIdentifier.ToStr()
                              |> sprintf "function not defined: %s"))
-                        |> EvalError
+                        |> ExecuteError
                     )
 
                 match foundFunc with
@@ -46,8 +46,8 @@ module StmtEvaluator =
                         |> List.map ref
                         |> Result.protect (List.zip func.Parameters)
                         |> Result.mapError (fun _ ->
-                            Errors.create ErrorType.Evaluation "wrong parameters count"
-                            |> EvalError)
+                            ExecuteError.create ErrorType.RuntimeError "wrong parameters count"
+                            |> ExecuteError)
                     
                     let newEnvironment = Environment.create environment.Global
                     Environment.nestNewEnvironment newEnvironment (paramsWithValues |> Map.ofSeq)
@@ -63,7 +63,7 @@ module StmtEvaluator =
                 | CompiledFunction compiledFun ->
                     return!
                         (compiledFun.Execute actualParametersValues)
-                        |> Result.mapError EvalError
+                        |> Result.mapError ExecuteError
             }
 
         let calculateInitValue (evaluateExpression: ExpEvaluator) varDeclarationInit =
@@ -78,7 +78,7 @@ module StmtEvaluator =
                 return!
                     (Environment.tryDefineVar environment vd.Name initVal)
                     |> (Result.map Value.createVoid)
-                    |> Result.mapError EvalError
+                    |> Result.mapError ExecuteError
             }
 
         let evalUserTypeCreation (evaluateExpression: ExpEvaluator) userTypeExp =
@@ -88,7 +88,7 @@ module StmtEvaluator =
             monad' {
                 let! userType =
                     userTypeFinder userTypeExp.StructTypeName
-                    |> Result.mapError EvalError
+                    |> Result.mapError ExecuteError
 
                 match userType.Kind with
                 | Struct s ->
@@ -104,14 +104,14 @@ module StmtEvaluator =
                     let! userInitializedfields =
                         userTypeExp.FieldsInitialization
                         |> Map.toList
-                        |> Utils.traverseM (fun (identifier, initializerExp) ->
+                        |> Traversable.traverseM (fun (identifier, initializerExp) ->
                             evaluateExpression initializerExp
                             |> Result.map (fun v -> (identifier, ref v)))
-                        |> Result.map (Map.ofList)
+                        |> Result.map Map.ofList
 
                     let! fields =
                         allFields
-                        |> Utils.traverseM (fun (id, vd) ->
+                        |> Traversable.traverseM (fun (id, vd) ->
                             (userInitializedfields.TryFind id)
                             |> Option.map Ok
                             |> Option.defaultWith (fun () ->
@@ -119,9 +119,9 @@ module StmtEvaluator =
                                 evaluateVarDeclaration evaluateExpression vd
                                 |> ignore
 
-                                varEvaluator vd.Name |> Result.mapError EvalError)
+                                varEvaluator vd.Name |> Result.mapError ExecuteError)
                             |> Result.map (fun v -> (id, v)))
-                        |> Result.map (Map.ofList)
+                        |> Result.map Map.ofList
 
                     Environment.returnToParent environment
 
@@ -162,7 +162,7 @@ module StmtEvaluator =
         | ExpressionStatement exp -> exp |> evaluateExpression
         | BlockStatement block -> block |> evaluateBlock environment
         | VarDeclarationStatement vd -> vd |> evaluateVarDeclaration
-        | IfStatement (ifs) ->
+        | IfStatement ifs ->
             monad' {
                 let! condRes = ifs.Condition |> evaluateExpression
 
@@ -174,7 +174,7 @@ module StmtEvaluator =
 
                 return! (branch |> evaluateScopedStmtRec)
             }
-        | WhileStatement (ws) -> loop ws.Body ws.Condition (Expression.voidConstant ())
+        | WhileStatement ws -> loop ws.Body ws.Condition (Expression.voidConstant ())
         | ForStatement fs ->
             monad' {
                 let! _ =
@@ -202,15 +202,15 @@ module StmtEvaluator =
 
     let evaluate (environment: ExecutionEnvironment) statement =
         match (statement, environment.IsCurrentGlobal) with
-        | (FunDeclaration fd, true) -> Environment.tryDefineCallable environment (fd |> Function)
-        | (UserTypeDeclaration userTypeDecl, true) -> Environment.tryDefineUserType environment userTypeDecl
-        | (FunDeclaration _, false)
-        | (UserTypeDeclaration _, false) ->
+        | FunDeclaration fd, true -> Environment.tryDefineCallable environment (fd |> Function)
+        | UserTypeDeclaration userTypeDecl, true -> Environment.tryDefineUserType environment userTypeDecl
+        | FunDeclaration _, false
+        | UserTypeDeclaration _, false ->
             "Function and structures can be defined only on global scope"
-            |> Errors.createResult Other
-        | (ScopedStatement stmt, _) ->
+            |> ExecuteError.createResult RuntimeError
+        | ScopedStatement stmt, _ ->
             evaluateScopedStmt environment stmt
             |> Result.mapError (fun e ->
                 match e with
-                | EvalError re -> re
+                | ExecuteError re -> re
                 | _ -> invalidOp "Return should be replaced by its value by this point")

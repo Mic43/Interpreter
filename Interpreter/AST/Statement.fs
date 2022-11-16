@@ -64,7 +64,7 @@ type Callable =
     static member FromFunction name f =
         { Name = name; Execute = f } |> CompiledFunction
 
-type Member = | Field of VarDeclaration
+type Member = Field of VarDeclaration
 //  | NestedType of UserType
 
 and Struct = { Members: Map<Identifier, Member> }
@@ -99,7 +99,8 @@ module Statement =
                        InitExpression = v }
                      |> Field))
                 |> Map.ofList }
-            |> Struct } |> UserTypeDeclaration
+            |> Struct }
+        |> UserTypeDeclaration
 
     let varDeclare name initExp =
         { Name = name |> Identifier.create
@@ -124,4 +125,3 @@ module Statement =
           Parameters = parameters |> List.map Identifier.create
           Body = body }
         |> FunDeclaration
-

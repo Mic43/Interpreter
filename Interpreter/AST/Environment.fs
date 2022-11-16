@@ -83,8 +83,8 @@ module Environment =
                 g.UserTypes.[identifier] |> Ok
             else
                 ($"Type is not defined {identifier}"
-                 |> Errors.createResult Other)
-        | Scoped (_) -> failwith "Internal error, enironment.Global kind must be of Global type"
+                 |> ExecuteError.createResult RuntimeError)
+        | Scoped _ -> failwith "Internal error, enironment.Global kind must be of Global type"
 
     let tryDefineUserType (environment: ExecutionEnvironment) userType =
         let message =
@@ -97,14 +97,14 @@ module Environment =
             (g.UserTypes.TryAdd(userType.Name, userType), ())
             |> Option.ofPair
             |> (message
-                |> (Errors.create Other >> Option.toResultWith))
+                |> (ExecuteError.create RuntimeError >> Option.toResultWith))
             |> Result.map Value.createVoid
-        | Scoped (_) -> failwith "Cannot define struct inside local scope"
+        | Scoped _ -> failwith "Cannot define struct inside local scope"
 
     let tryDefineVar (environment: ExecutionEnvironment) identifier value =
         if environment.Current.Variables.ContainsKey identifier then
             (sprintf "variable already defined: %s" (identifier.ToStr()))
-            |> (Errors.createResult ErrorType.Other)
+            |> (ExecuteError.createResult ErrorType.RuntimeError)
         else
             environment.Current.Variables.Add(identifier, ref value)
             Result.Ok()
@@ -120,8 +120,8 @@ module Environment =
                 return found
             }
             |> Option.toResultWith (
-                Errors.create
-                    ErrorType.Other
+                ExecuteError.create
+                    ErrorType.RuntimeError
                     (identifier.ToStr()
                      |> sprintf "variable not defined: %s")
             )
@@ -137,10 +137,10 @@ module Environment =
             (g.Functions.TryAdd(callable.Name, callable), ())
             |> Option.ofPair
             |> (message
-                |> (Errors.create ErrorType.Other
+                |> (ExecuteError.create ErrorType.RuntimeError
                     >> Option.toResultWith))
             |> Result.map Value.createVoid
-        | Scoped (_) -> failwith "Cannot define function inside local scope"
+        | Scoped _ -> failwith "Cannot define function inside local scope"
 
     let returnToParent (environment: ExecutionEnvironment) =
         environment.CurrentEnvironment <-

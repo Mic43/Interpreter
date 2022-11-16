@@ -51,7 +51,7 @@ module Value =
         numberLiteral numberFormat "number"
         >>= fun nl ->
                 if nl.IsInteger |> not then
-                    (nl.String) |> float |> FloatValue |> preturn
+                    nl.String |> float |> FloatValue |> preturn
                 else
                     fail "not a float"
 
