@@ -31,13 +31,13 @@ module Printer =
         | FunCall fc ->
             sprintf
                 "%s(%s)"
-                (fc.Name |> Identifier.toStr)
+                (fc.Name |> Identifier.asString)
                 (fc.ActualParameters
                  |> (List.map expressionToStr)
                  |> List.reduce (fun acc s -> acc + "," + s))
         | Mutable me ->
             match me with
-            | Var ident -> ident |> Identifier.toStr
+            | Var ident -> ident |> Identifier.asString
 
 
     let rec scopedStmtToStr (stmt: ScopedStatement) =
@@ -51,7 +51,7 @@ module Printer =
         | VarDeclarationStatement vd ->
             sprintf
                 "%s = %s"
-                (vd.Name |> Identifier.toStr)
+                (vd.Name |> Identifier.asString)
                 (vd.InitExpression |> Option.defaultValue (Expression.voidConstant())
                  |> ExpressionStatement
                  |> scopedStmtToStr)
@@ -82,9 +82,9 @@ module Printer =
         | FunDeclaration fd ->
             sprintf
                 "%s (%s) \n%s"
-                (fd.Name |> Identifier.toStr)
+                (fd.Name |> Identifier.asString)
                 (fd.Parameters
-                 |> List.map Identifier.toStr
+                 |> List.map Identifier.asString
                  |> List.reduce (fun a b -> sprintf "%s, %s" a b))
                 (fd.Body
                  |> BlockStatement

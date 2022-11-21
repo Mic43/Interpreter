@@ -8,36 +8,24 @@ module StmtEvaluator =
         (exp: ScopedStatement)
         : Result<Value, EvalStopped> =
 
-        let evaluateScopedStmtRec = evaluateScopedStmt environment
+        let evaluateScopedStmtRec =
+            evaluateScopedStmt environment
 
         let evaluateBlock environment block =
             Environment.nestNewEmptyEnvironment environment
 
             let res =
                 block.Content
-                |> Traversable.traverseMTail (evaluateScopedStmt environment) 
+                |> Traversable.traverseMTail (evaluateScopedStmt environment)
                 |> Result.map (fun _ -> Value.Void)
 
             do environment |> Environment.returnToParent
             res
 
         let evaluateFunctionCall funIdentifier (actualParametersValues: Value list) =
-            let funcs =
-                match environment.Global.Kind with
-                | Global g -> g.Functions
-                | _ -> invalidOp "default environment must be of global kind"
 
             monad' {
-                let! foundFunc =
-                    (funcs.TryGetValue funIdentifier)
-                    |> Option.ofPair
-                    |> Option.toResultWith (
-                        (ExecuteError.create
-                            ErrorType.RuntimeError
-                            (funIdentifier.ToStr()
-                             |> sprintf "function not defined: %s"))
-                        |> ExecuteError
-                    )
+                let! foundFunc = Environment.tryGetCallable environment funIdentifier
 
                 match foundFunc with
                 | Function func ->
@@ -48,18 +36,17 @@ module StmtEvaluator =
                         |> Result.mapError (fun _ ->
                             ExecuteError.create ErrorType.RuntimeError "wrong parameters count"
                             |> ExecuteError)
-                    
-                    let newEnvironment = Environment.create environment.Global
+
+                    let newEnvironment =
+                        Environment.create environment.Global
+
                     Environment.nestNewEnvironment newEnvironment (paramsWithValues |> Map.ofSeq)
 
-                    let! res =
+                    return!
                         func.Body
                         |> evaluateBlock newEnvironment
                         |> Value.getReturnedValue
 
-                   // environment |> Environment.returnToParent
-
-                    return res
                 | CompiledFunction compiledFun ->
                     return!
                         (compiledFun.Execute actualParametersValues)
@@ -82,8 +69,11 @@ module StmtEvaluator =
             }
 
         let evalUserTypeCreation (evaluateExpression: ExpEvaluator) userTypeExp =
-            let userTypeFinder = Environment.tryGetUserType environment
-            let varEvaluator = Environment.tryGetVarValue environment
+            let userTypeFinder =
+                Environment.tryGetUserType environment
+
+            let varEvaluator =
+                Environment.tryGetVarValue environment
 
             monad' {
                 let! userType =
@@ -119,7 +109,8 @@ module StmtEvaluator =
                                 evaluateVarDeclaration evaluateExpression vd
                                 |> ignore
 
-                                varEvaluator vd.Name |> Result.mapError ExecuteError)
+                                varEvaluator vd.Name
+                                |> Result.mapError ExecuteError)
                             |> Result.map (fun v -> (id, v)))
                         |> Result.map Map.ofList
 
@@ -156,7 +147,8 @@ module StmtEvaluator =
         let evaluateVarDeclaration =
             evaluateVarDeclaration evaluateExpression
 
-        let calculateInitValue = calculateInitValue evaluateExpression
+        let calculateInitValue =
+            calculateInitValue evaluateExpression
 
         match exp with
         | ExpressionStatement exp -> exp |> evaluateExpression

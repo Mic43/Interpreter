@@ -1,4 +1,4 @@
-﻿module ExpSimplifierTest
+﻿module Interpreter.Tests.ExpSimplifierTest
 
 open Xunit
 open Interpreter.AST

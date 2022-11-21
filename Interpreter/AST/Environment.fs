@@ -89,7 +89,7 @@ module Environment =
     let tryDefineUserType (environment: ExecutionEnvironment) userType =
         let message =
             userType.Name
-            |> Identifier.toStr
+            |> Identifier.asString
             |> sprintf "Struct %s already defined"
 
         match environment.Global.Kind with
@@ -97,13 +97,14 @@ module Environment =
             (g.UserTypes.TryAdd(userType.Name, userType), ())
             |> Option.ofPair
             |> (message
-                |> (ExecuteError.create RuntimeError >> Option.toResultWith))
+                |> (ExecuteError.create RuntimeError
+                    >> Option.toResultWith))
             |> Result.map Value.createVoid
         | Scoped _ -> failwith "Cannot define struct inside local scope"
 
     let tryDefineVar (environment: ExecutionEnvironment) identifier value =
         if environment.Current.Variables.ContainsKey identifier then
-            (sprintf "variable already defined: %s" (identifier.ToStr()))
+            (sprintf "variable already defined: %s" (identifier.Get()))
             |> (ExecuteError.createResult ErrorType.RuntimeError)
         else
             environment.Current.Variables.Add(identifier, ref value)
@@ -115,21 +116,40 @@ module Environment =
         else
             monad' {
                 let! targetEnvironment = tryFindVariableEnvironment environment identifier
-                let found = targetEnvironment.Variables.[identifier]
+
+                let found =
+                    targetEnvironment.Variables.[identifier]
+
                 environment.VariablesCache.Add(identifier, found)
                 return found
             }
             |> Option.toResultWith (
                 ExecuteError.create
                     ErrorType.RuntimeError
-                    (identifier.ToStr()
+                    (identifier.Get()
                      |> sprintf "variable not defined: %s")
             )
+
+    let tryGetCallable (environment: ExecutionEnvironment) identifier =
+        let funcs =
+            match environment.Global.Kind with
+            | Global g -> g.Functions
+            | _ -> invalidOp "default environment must be of global kind"
+
+        (funcs.TryGetValue identifier)
+        |> Option.ofPair
+        |> Option.toResultWith (
+            (ExecuteError.create
+                ErrorType.RuntimeError
+                (identifier.Get()
+                 |> sprintf "Function not defined: %s"))
+            |> ExecuteError
+        )
 
     let tryDefineCallable enviroment (callable: Callable) =
         let message =
             callable.Name
-            |> Identifier.toStr
+            |> Identifier.asString
             |> sprintf "Function %s already defined"
 
         match enviroment.Global.Kind with

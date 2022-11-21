@@ -1,14 +1,24 @@
 namespace Interpreter.AST
 
+open FSharpPlus
+
 type Identifier =
     private
     | Identifier of string
-    member this.ToStr() =
+    member this.Get() =
         match this with
         | Identifier s -> s
 
 module Identifier =
-    let tryCreate s = Identifier s
-    let create s = (tryCreate s)
+    let tryCreate (s: string) =
+        if s.Length > 0 then
+            Identifier s |> Some
+        else
+            None
 
-    let toStr (identifier: Identifier) = identifier.ToStr()
+    let create s =
+        match (tryCreate s) with
+        | Some v -> v
+        | None -> "s" |> invalidArg "Not valid identifier"
+
+    let asString (identifier: Identifier) = identifier.Get()

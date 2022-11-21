@@ -1,4 +1,4 @@
-module RunnerTests
+module Interpreter.Tests.RunnerTests
 
 open Xunit
 open Interpreter.AST

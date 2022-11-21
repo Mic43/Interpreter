@@ -1,4 +1,4 @@
-module ParserTests
+module Interpreter.Tests.ParserTests
 
 open System.Globalization
 open Xunit
