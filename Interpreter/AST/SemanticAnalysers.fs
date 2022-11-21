@@ -35,7 +35,7 @@ module SemanticAnalysers =
                     None
             | _ -> None
 
-    let private singleExpressionAnalyser environment (exp: Expression) =
+    let rec private singleExpressionAnalyser environment (exp: Expression) =
         match exp with
         | Mutable (Var v) ->
             match v |> Environment.tryGetVarValue environment with
@@ -44,7 +44,7 @@ module SemanticAnalysers =
                 v.Get()
                 |> AnalyserResult.VariableNotDefined
                 |> Some
-        | Assignment (Mutable _, _) -> None
+        | Assignment (Mutable m, _) -> m |> Mutable |> singleExpressionAnalyser environment
         | Assignment (exp, _) -> exp |> ExpressionMustBeLValue |> Some
         | FunCall funCall ->
             match funCall.Name
@@ -300,5 +300,5 @@ module SemanticAnalysers =
                 |> Continuation.map ((List.collect id) >> appendCurrentNodeResults)
                 |> Continuation.run cnt
 
-    let rec private analyseStatement (nodeAnalyser: StatementAnalyser) environment (stmt: Statement) =
+    let analyseStatement (nodeAnalyser: StatementAnalyser) environment (stmt: Statement) =
         analyseStatementInternal nodeAnalyser environment stmt id

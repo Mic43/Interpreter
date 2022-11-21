@@ -10,7 +10,7 @@ open Generators
 open FsCheck
 open Interpreter.Parser
 open FParsec.CharParsers
-
+open Interpreter.Tests.Infrastructure.ParserHelper
 
 let constExpEvaluator exp =
     ExpEvaluator.tryEvaluate
@@ -26,15 +26,6 @@ let simplify =
     ExpSimplifier.simplifyNode
     |> ExpSimplifier.simplify
 
-let map f pResult =
-    match pResult with
-    | Success (r, u, o) -> (r |> f, u, o) |> Success
-    | Failure _ -> pResult
-
-let toOption pResult =
-    match pResult with
-    | Success (r, _, _) -> r |> Some
-    | Failure _ -> None
 
 module Binary =
     [<Property>]
@@ -153,7 +144,7 @@ module General =
 
 module WithParsing =
 
-    let expParser = Interpreter.Parser.Expression.pExpr ()
+    let expParser = Expression.pExpr ()
 
     let runParser str =
         str |> run expParser |> map simplify |> toOption
