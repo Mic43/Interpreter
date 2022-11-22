@@ -5,10 +5,10 @@ open Xunit
 open Interpreter.AST
 open Interpreter.AST.ExecuteError
 open FsCheck
-open FsCheck.Xunit
 open FSharpPlus
 open FSharpPlus.Data
 open ExpressionHelper
+open FsCheck.Xunit
 
 module Variables =
     [<Property>]

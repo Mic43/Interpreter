@@ -139,8 +139,10 @@ module General =
                 |> constExpEvaluator
                 |> Result.map Constant
 
-            actual .=. expected)
-        |> Prop.forAll (Expressions.constantExpressionTree |> Arb.fromGen)
+            match expected with
+            | Ok (Constant (FloatValue v)) when System.Double.IsNaN(v) -> true |> Prop.ofTestable
+            | _ -> actual .=. expected)
+        |> Prop.forAll (Expressions.constantExpressionTree |> Arb.fromGen) 
 
 module WithParsing =
 
@@ -162,7 +164,8 @@ module WithParsing =
 
     [<Fact>]
     let ``simplify brackets`` () =
-        let actual = "( x * 0 ) + ( y * 2 )" |> runParser
+        let actual =
+            "( x * 0 ) + ( y * 2 )" |> runParser
 
         let expected =
             ("y" |> Expression.var, 2 |> Expression.intConstant)
@@ -173,9 +176,11 @@ module WithParsing =
 
     [<Fact>]
     let ``simplify trailing 0`` () =
-        let actual = "( a + 6 ) * 2 * 0" |> runParser
+        let actual =
+            "( a + 6 ) * 2 * 0" |> runParser
 
-        let expected = 0 |> Expression.intConstant |> Some
+        let expected =
+            0 |> Expression.intConstant |> Some
 
         Assert.Equal(expected, actual)
 
@@ -183,7 +188,8 @@ module WithParsing =
     let ``simplify leading 0`` () =
         let actual = "0 * ( x + y )" |> runParser
 
-        let expected = 0 |> Expression.intConstant |> Some
+        let expected =
+            0 |> Expression.intConstant |> Some
 
         Assert.Equal(expected, actual)
 
@@ -205,7 +211,8 @@ module WithParsing =
         let actual =
             "( x + y + z ) - ( x + y + z )" |> runParser
 
-        let expected = 0 |> Expression.intConstant |> Some
+        let expected =
+            0 |> Expression.intConstant |> Some
 
         Assert.Equal(expected, actual)
 
@@ -215,7 +222,8 @@ module WithParsing =
             "( x + y + z ) - ( ( x + y + z ) + 0 )"
             |> runParser
 
-        let expected = 0 |> Expression.intConstant |> Some
+        let expected =
+            0 |> Expression.intConstant |> Some
 
         Assert.Equal(expected, actual)
 
@@ -230,7 +238,8 @@ module WithParsing =
 
     [<Fact>]
     let ``simplify distributivity 1`` () =
-        let actual = "( a * b ) + ( a * c )" |> runParser
+        let actual =
+            "( a * b ) + ( a * c )" |> runParser
 
         let expected =
             ("a" |> Expression.var,
@@ -278,6 +287,7 @@ module WithParsing =
             "( x - x ) + ( ( b + 0 ) * ( a + 0 ) + c * a ) - ( ( a * b ) + ( a * c ) + ( ( 12 + 7 ) * 0 ) )"
             |> runParser
 
-        let expected = Expression.intConstant 0 |> Some
+        let expected =
+            Expression.intConstant 0 |> Some
 
         Assert.Equal(expected, actual)

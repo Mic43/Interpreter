@@ -44,7 +44,10 @@ module SemanticAnalysers =
                 v.Get()
                 |> AnalyserResult.VariableNotDefined
                 |> Some
-        | Assignment (Mutable m, _) -> m |> Mutable |> singleExpressionAnalyser environment
+        | Assignment (Mutable m, _) ->
+            m
+            |> Mutable
+            |> singleExpressionAnalyser environment
         | Assignment (exp, _) -> exp |> ExpressionMustBeLValue |> Some
         | FunCall funCall ->
             match funCall.Name
@@ -72,8 +75,8 @@ module SemanticAnalysers =
              |> (nodeAnalyser environment)
              |> Option.toList)
 
-        let appendCurrentNodeResults =
-            analyseCurrentNode () |> List.append
+        let appendCurrentNodeResults res =
+            analyseCurrentNode()  |> List.append res
 
         let genContinuationForSingleChild exp =
             expressionAnalyse exp
@@ -164,8 +167,8 @@ module SemanticAnalysers =
         let expressionAnalyser =
             analyseExpression environment
 
-        let appendCurrentNodeResults =
-            analyseCurrentStatement () |> List.append
+        let appendCurrentNodeResults res =
+            statementAnalyser stmt  |> List.append res
 
         match stmt with
         | ScopedStatement ss ->
@@ -271,7 +274,7 @@ module SemanticAnalysers =
                 (expression |> expressionAnalyser)
                 @ analyseCurrentStatement ()
                 |> cnt
-            | Empty -> []
+            | Empty -> [] |> cnt
         | FunDeclaration funDecl ->
             funDecl.Body
             |> BlockStatement
@@ -302,3 +305,9 @@ module SemanticAnalysers =
 
     let analyseStatement (nodeAnalyser: StatementAnalyser) environment (stmt: Statement) =
         analyseStatementInternal nodeAnalyser environment stmt id
+
+    let analyseProgram environment =
+        function
+        | Program statements ->
+            statements
+            |> List.collect (analyseStatement singleStatementAnalyser environment)

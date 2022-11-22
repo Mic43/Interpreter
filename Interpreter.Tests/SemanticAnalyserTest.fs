@@ -12,10 +12,12 @@ open FParsec.CharParsers
 open SemanticAnalysers
 open Interpreter.Tests.Infrastructure.ParserHelper
 
+
+
 module ExpressionAnalyserTest =
 
 
-    let runParser str =
+    let runAnalyser str =
         let executionEnvironment =
             Environment.createEmpty ()
 
@@ -29,31 +31,28 @@ module ExpressionAnalyserTest =
 
 
     [<Property>]
-    let ``Assigning to constant causes ExpressionMustBeLValue error`` (constantValue: int) =
+    let ``Assigning to constant expression causes ExpressionMustBeLValue error`` (constantValue: int) =
         let p =
-            (fun rightSide ->
-                let constant =
-                    constantValue |> Expression.intConstant
-
+            (fun (leftSide, rightSide)->               
                 let exp =
-                    (constant, rightSide) |> Assignment
+                    (leftSide, rightSide) |> Assignment
 
                 let expAnalyser =
                     analyseExpression (Environment.createEmpty ())
 
                 let expected =
-                    [ constant |> ExpressionMustBeLValue ]
+                    [ leftSide |> ExpressionMustBeLValue ]
 
                 let actual = expAnalyser exp
 
                 actual .=. expected)
 
-        Prop.forAll (Expressions.constantExpressionTree |> Arb.fromGen) p
+        Prop.forAll (Expressions.constantExpressionTree |> Gen.two |> Arb.fromGen) p
 
     [<Fact>]
     let ``Not defined variable 1`` () =
 
-        let actual = "7+4 * x" |> runParser
+        let actual = "7+4 * x" |> runAnalyser
 
         let expected =
             "x"
@@ -66,7 +65,7 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``Not defined variable 2`` () =
 
-        let actual = "[1,z]" |> runParser
+        let actual = "[1,z]" |> runAnalyser
 
         let expected =
             "z"
@@ -79,7 +78,7 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``Not defined variable i nested lists`` () =
 
-        let actual = "[1,[z]]" |> runParser
+        let actual = "[1,[z]]" |> runAnalyser
 
         let expected =
             "z"
@@ -92,7 +91,7 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``Not defined variable 3`` () =
 
-        let actual = "a = 10" |> runParser
+        let actual = "a = 10" |> runAnalyser
 
         let expected =
             "a"
@@ -105,7 +104,7 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``Not defined variable 4`` () =
 
-        let actual = "abc++" |> runParser
+        let actual = "abc++" |> runAnalyser
 
         let expected =
             "abc"
@@ -118,7 +117,7 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``Not defined variable 5`` () =
 
-        let actual = "-e" |> runParser
+        let actual = "-e" |> runAnalyser
 
         let expected =
             "e"
@@ -131,7 +130,7 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``Not defined variable 6`` () =
 
-        let actual = "(7 > a)*(2+12)" |> runParser
+        let actual = "(7 > a)*(2+12)" |> runAnalyser
 
         let expected =
             "a"
@@ -144,7 +143,7 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``Not defined list access`` () =
 
-        let actual = "12 + a[0]" |> runParser
+        let actual = "12 + a[0]" |> runAnalyser
 
         let expected =
             "a"
@@ -158,7 +157,7 @@ module ExpressionAnalyserTest =
     let ``multiple not defined variables`` () =
 
         let actual =
-            "y * x" |> runParser |> Option.map Set.ofList
+            "y * x" |> runAnalyser |> Option.map Set.ofList
 
         let expected =
             [ "x"; "y" ]
@@ -172,7 +171,7 @@ module ExpressionAnalyserTest =
     let ``multiple not defined variables 2`` () =
 
         let actual =
-            "z[x]++" |> runParser |> Option.map Set.ofList
+            "z[x]++" |> runAnalyser |> Option.map Set.ofList
 
         let expected =
             [ "z"; "x" ]
@@ -187,7 +186,7 @@ module ExpressionAnalyserTest =
 
         let actual =
             "abc = cba+5*-z"
-            |> runParser
+            |> runAnalyser
             |> Option.map Set.ofList
 
         let expected =
@@ -203,7 +202,7 @@ module ExpressionAnalyserTest =
 
         let actual =
             "5*foo(5) + 17"
-            |> runParser
+            |> runAnalyser
             |> Option.map Set.ofList
 
         let expected =
@@ -217,7 +216,7 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``assignment to simple constant expression causes ExpressionMustBeLValue error`` () =
 
-        let actual = "1 + 1 = 2" |> runParser
+        let actual = "1 + 1 = 2" |> runAnalyser
 
         let expected =
             [ Expression.add (1 |> Expression.intConstant) (1 |> Expression.intConstant)
@@ -229,7 +228,7 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``assignment to simple constant and not defined variable test`` () =
 
-        let actual = "9 * 1 = 2*a + 5" |> runParser |> Option.map Set.ofList
+        let actual = "9 * 1 = 2*a + 5" |> runAnalyser |> Option.map Set.ofList
 
         let expected =
             [ Expression.mul (9 |> Expression.intConstant) (1 |> Expression.intConstant)
@@ -241,7 +240,7 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``simple constant expression not causes any errors`` () =
 
-        let actual = "9 * 1 == 9" |> runParser 
+        let actual = "9 * 1 == 9" |> runAnalyser 
 
         let expected =
             List.Empty |> Some
@@ -251,9 +250,82 @@ module ExpressionAnalyserTest =
     [<Fact>]
     let ``simple list constant expression not causes any errors`` () =
 
-        let actual = "[9]" |> runParser 
+        let actual = "[9]" |> runAnalyser 
 
         let expected =
             List.Empty |> Some
+
+        Assert.Equal(expected, actual)
+        
+module StatementAnalyserTest =
+    
+    let runAnalyser str =
+        let executionEnvironment =
+            Environment.createEmpty ()
+
+        let pProgram =
+            Interpreter.Parser.Statement.pProgram
+
+        str
+        |> run pProgram
+        |> map (executionEnvironment |> analyseProgram)
+        |> toOption
+    
+    [<Fact>]
+    let ``single variable declaration works correctly`` () =
+
+        let actual = "var x = 5;" |> runAnalyser 
+
+        let expected =
+            List.empty |> Some
+
+        Assert.Equal(expected, actual)
+        
+    [<Fact>]
+    let ``declaring same variable twice causes error`` () =
+
+        let actual = "var x = 5; var x = 4;" |> runAnalyser 
+
+        let expected =
+            ["x" |> VariableAlreadyDefined] |> Some
+
+        Assert.Equal(expected, actual)
+    
+    [<Fact>]
+    let ``declaring same variable twice inside function causes error`` () =
+
+        let actual = "fun foo() { var a = 5; var a = 4;}" |> runAnalyser 
+
+        let expected =
+            ["a" |> VariableAlreadyDefined] |> Some
+
+        Assert.Equal(expected, actual)
+        
+    [<Fact>]
+    let ``shadowing function parameter not causes duplicated variable error`` () =
+
+        let actual = "fun foo(a) {var a = 5;}" |> runAnalyser 
+
+        let expected =
+            List.empty |> Some
+
+        Assert.Equal(expected, actual)
+        
+    [<Fact>]
+    let ``declaring variable twice inside false if branch causes error`` () =
+
+        let actual =
+            """
+            var x = 1;
+            if (x==2)
+            {
+                var ccc = 5;
+                var ccc = 6;
+            }
+            """
+            |> runAnalyser
+
+        let expected =
+            ["ccc" |> VariableAlreadyDefined] |> Some
 
         Assert.Equal(expected, actual)

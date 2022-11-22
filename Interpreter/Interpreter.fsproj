@@ -16,7 +16,7 @@
     <Compile Include="AST\ExpSimplifier.fs" />
     <Compile Include="AST\StmtEvaluator.fs" />
     <Compile Include="AST\StmtSimplifier.fs" />
-    <Compile Include="AST\SemanticAnalysers.fs" />
+    <Compile Include="AST\SemanticAnalyser.fs" />
     <Compile Include="AST\Interpreter.fs" />
     <Compile Include="Parser\Elementary.fs" />
     <Compile Include="Parser\Expression.fs" />
