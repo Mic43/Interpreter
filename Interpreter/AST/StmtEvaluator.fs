@@ -168,25 +168,28 @@ module StmtEvaluator =
             }
         | WhileStatement ws -> loop ws.Body ws.Condition (Expression.voidConstant ())
         | ForStatement fs ->
-            monad' {
-                let! _ =
-                    match fs.Initializer with
-                    | ExpressionInit ex -> ex |> evaluateExpression
-                    | VarDeclarationInit vd ->
-                        monad' {
-                            let! initValue = vd |> calculateInitValue
+            match fs.Initializer with
+            | ExpressionInit ex ->
+                monad' {
+                    let! _ = ex |> evaluateExpression
+                    return! (loop fs.Body fs.Condition fs.Increment)
+                }
 
-                            [ vd.Name, ref initValue ]
-                            |> Map.ofList
-                            |> Environment.nestNewEnvironment environment
+            | VarDeclarationInit vd ->
+                monad' {
+                    let! initValue = vd |> calculateInitValue
 
-                            Value.Void
-                        }
+                    [ vd.Name, ref initValue ]
+                    |> Map.ofList
+                    |> Environment.nestNewEnvironment environment
 
-                let! loopRes = (loop fs.Body fs.Condition fs.Increment)
-                Environment.returnToParent environment
-                return loopRes
-            }
+                    let! loopRes = (loop fs.Body fs.Condition fs.Increment)
+
+                    do Environment.returnToParent environment
+
+                    return loopRes
+                }
+
         | ReturnStatement exp ->
             (evaluateExpression exp)
             |> Result.bind (ReturnStmtReached >> Error)

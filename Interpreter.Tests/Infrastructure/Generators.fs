@@ -1,4 +1,4 @@
-﻿module Generators
+﻿module Interpreter.Tests.Infrastructure.Generators
 
 open FsCheck
 open Interpreter.AST

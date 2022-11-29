@@ -4,8 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AST\Utils.fs" />
-    <Compile Include="AST\ExecuteError.fs" />
     <Compile Include="AST\Identifier.fs" />
+    <Compile Include="AST\ExecuteError.fs" />
     <Compile Include="AST\Value.fs" />
     <Compile Include="AST\Expression.fs" />
     <Compile Include="AST\Statement.fs" />

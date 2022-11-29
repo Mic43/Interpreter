@@ -52,6 +52,18 @@ module Environment =
 
     let createEmpty () = create (createEmptyGlobal ())
 
+    let fromDefaultFunctions defaultFunctionsMap =
+        defaultFunctionsMap
+        |> Map.toList
+        |> List.map (
+            (fun (name, func) -> Callable.FromFunction (name |> Identifier.create) func)
+            >> fun callable -> (callable.Name, callable)
+        )
+        |> Map.ofList
+        |> Dictionary
+        |> Environment.CreateGlobal
+        |> create
+
     let private createNested parent variables =
         { Variables = new Dictionary<Identifier, Ref<Value>>(variables |> Map.toSeq |> dict)
           Kind = { Parent = parent } |> EnvironmentKind.Scoped }

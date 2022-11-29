@@ -4,13 +4,7 @@ open System.Collections.Generic
 open Microsoft.FSharp.Core
 
 
-module SemanticAnalysers =
-    type AnalyserResult =
-        | MisplacedReturnStatement
-        | VariableAlreadyDefined of string
-        | VariableNotDefined of string
-        | FunctionNotDefined of string
-        | ExpressionMustBeLValue of Expression
+module SemanticAnalyser =
 
     type StatementAnalyser = ExecutionEnvironment -> Statement -> AnalyserResult option
     type ExpressionAnalyser = ExecutionEnvironment -> Expression -> AnalyserResult option
@@ -33,6 +27,16 @@ module SemanticAnalysers =
                     Some(MisplacedReturnStatement)
                 else
                     None
+            | FunDeclaration f ->
+                let error =
+                    Environment.tryDefineCallable environment (f |> Function)
+
+                match error with
+                | Ok _ -> None
+                | Error _ ->
+                    f.Name.Get()
+                    |> AnalyserResult.FunctionAlreadyDefined
+                    |> Some
             | _ -> None
 
     let rec private singleExpressionAnalyser environment (exp: Expression) =
@@ -48,10 +52,15 @@ module SemanticAnalysers =
             m
             |> Mutable
             |> singleExpressionAnalyser environment
-        | Assignment (exp, _) -> exp |> ExpressionMustBeLValue |> Some
+
+        | Assignment (exp, _) ->
+            exp
+            |> Printer.expressionToStr
+            |> ExpressionMustBeLValue
+            |> Some
         | FunCall funCall ->
             match funCall.Name
-                  |> Environment.tryGetVarValue environment
+                  |> Environment.tryGetCallable environment
                 with
             | Ok _ -> None
             | Error _ ->
@@ -76,7 +85,7 @@ module SemanticAnalysers =
              |> Option.toList)
 
         let appendCurrentNodeResults res =
-            analyseCurrentNode()  |> List.append res
+            analyseCurrentNode () |> List.append res
 
         let genContinuationForSingleChild exp =
             expressionAnalyse exp
@@ -168,7 +177,7 @@ module SemanticAnalysers =
             analyseExpression environment
 
         let appendCurrentNodeResults res =
-            statementAnalyser stmt  |> List.append res
+            statementAnalyser stmt |> List.append res
 
         match stmt with
         | ScopedStatement ss ->
@@ -184,6 +193,8 @@ module SemanticAnalysers =
                 @ analyseCurrentStatement ()
                 |> cnt
             | BlockStatement block ->
+                environment |> Environment.nestNewEmptyEnvironment
+
                 let analyserResults =
                     block.Content
                     |> List.map (
@@ -196,6 +207,9 @@ module SemanticAnalysers =
                 |> TraversableContinuationList.sequence
                 |> Continuation.map (List.collect id)
                 |> Continuation.map appendCurrentNodeResults
+                |> Continuation.map (fun res ->
+                    environment |> Environment.returnToParent
+                    res)
                 |> Continuation.run cnt
             | IfStatement ifStmt ->
                 continuation {
@@ -239,17 +253,6 @@ module SemanticAnalysers =
                 |> Continuation.run cnt
             | ForStatement forStatement ->
                 continuation {
-                    let! body =
-                        forStatement.Body
-                        |> ScopedStatement
-                        |> analyseRec
-                        |> Continuation.fromFun
-
-                    let condition =
-                        forStatement.Condition |> expressionAnalyser
-
-                    let incr =
-                        forStatement.Increment |> expressionAnalyser
 
                     let! initializer =
                         match forStatement.Initializer with
@@ -258,11 +261,30 @@ module SemanticAnalysers =
                             |> expressionAnalyser
                             |> Continuation.ret
                         | VarDeclarationInit varDeclaration ->
+                            do environment |> Environment.nestNewEmptyEnvironment
+
                             varDeclaration
                             |> VarDeclarationStatement
                             |> ScopedStatement
                             |> analyseRec
                             |> Continuation.fromFun
+
+                    let condition =
+                        forStatement.Condition |> expressionAnalyser
+
+                    let incr =
+                        forStatement.Increment |> expressionAnalyser
+
+                    let! body =
+                        forStatement.Body
+                        |> ScopedStatement
+                        |> analyseRec
+                        |> Continuation.fromFun
+
+                    do
+                        match forStatement.Initializer with
+                        | VarDeclarationInit _ -> environment |> Environment.returnToParent
+                        | _ -> ()
 
                     return
                         condition
@@ -276,12 +298,22 @@ module SemanticAnalysers =
                 |> cnt
             | Empty -> [] |> cnt
         | FunDeclaration funDecl ->
+            funDecl.Parameters
+            |> List.map (fun param -> (param, ref Value.Void))
+            |> Map.ofList
+            |> Environment.nestNewEnvironment environment
+
             funDecl.Body
             |> BlockStatement
             |> ScopedStatement
             |> analyseRec
             |> Continuation.fromFun
-            |> Continuation.map appendCurrentNodeResults
+            |> Continuation.map (
+                appendCurrentNodeResults
+                >> (fun res ->
+                    environment |> Environment.returnToParent
+                    res)
+            )
             |> Continuation.run cnt
         | UserTypeDeclaration userType ->
             match userType.Kind with

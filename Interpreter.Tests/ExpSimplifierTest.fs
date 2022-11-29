@@ -5,12 +5,13 @@ open Interpreter.AST
 open FsCheck.Xunit
 open FSharpPlus
 open FSharpPlus.Data
-open ExpressionHelper
-open Generators
 open FsCheck
 open Interpreter.Parser
 open FParsec.CharParsers
 open Interpreter.Tests.Infrastructure.ParserHelper
+open Interpreter.Tests.Infrastructure.Generators
+open Interpreter.Tests.Infrastructure.ExpressionHelper
+
 
 let constExpEvaluator exp =
     ExpEvaluator.tryEvaluate

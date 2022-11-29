@@ -5,8 +5,9 @@ open Interpreter.AST
 open FsCheck.Xunit
 open FSharpPlus
 open FSharpPlus.Data
-open ExpressionHelper
-open Generators
+open Interpreter.Tests.Infrastructure.ExpressionHelper
+open Interpreter.Tests.Infrastructure.Generators
+
 open FsCheck
 open Interpreter.Parser
 open FParsec.CharParsers

@@ -4,32 +4,20 @@ open FSharpPlus
 open System.Collections.Generic
 
 module Interpreter =
-
-    let runWithDefaultEnv defaultEnvironment (Program statementsList) =
-        let createDefaultEnvironment defaultEnvironment =
-            defaultEnvironment
-            |> Map.toList
-            |> List.map (
-                (fun (name, func) -> Callable.FromFunction(name |> Identifier.create) func)
-                >> fun callable -> (callable.Name, callable)
-            )
-            |> Map.ofList
-            |> Dictionary
-            |> Environment.CreateGlobal
-        
-        let environment =
-            Environment.create (createDefaultEnvironment defaultEnvironment)
-
+    let run environment (Program statementsList) =
         statementsList
         |> Traversable.traverseMTail (StmtEvaluator.evaluate environment)
         |> Value.getLastResultOrVoid
 
-    let run program =
+    let runWithDefaultEnvironment program =
         let defaultEnvironment =
             [ "print", DefaultEnvironment.tryPrint
               "println", DefaultEnvironment.tryPrintLn
-              "readInt", DefaultEnvironment.tryReadInt          
+              "readInt", DefaultEnvironment.tryReadInt
               "len", DefaultEnvironment.tryGetLen ]
             |> Map.ofList
 
-        runWithDefaultEnv defaultEnvironment program
+        run
+            (defaultEnvironment
+             |> Environment.fromDefaultFunctions)
+            program

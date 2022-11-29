@@ -1,8 +1,16 @@
 ﻿namespace Interpreter.AST
 
+
+type AnalyserResult =
+    | MisplacedReturnStatement
+    | VariableAlreadyDefined of string
+    | VariableNotDefined of string
+    | FunctionNotDefined of string
+    | FunctionAlreadyDefined of string
+    | ExpressionMustBeLValue of string
 type ErrorType =        
     | ParseError
-    | SemanticError
+    | SemanticError of AnalyserResult
     | RuntimeError
 
 type ExecuteError = { Message: string; Type: ErrorType }

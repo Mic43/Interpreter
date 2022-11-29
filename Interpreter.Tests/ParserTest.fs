@@ -3,11 +3,14 @@ module Interpreter.Tests.ParserTests
 open System.Globalization
 open Xunit
 open Interpreter.AST
-open Interpreter.AST.ExecuteError
 open FsCheck
 open FSharpPlus
 open FSharpPlus.Data
-open ExpressionHelper
+open Interpreter.Tests.Infrastructure.Generators
+open Interpreter.Tests.Infrastructure.ExpressionHelper
+open Interpreter.Tests.Infrastructure.ParserHelper
+
+
 open FsCheck.Xunit
 
 module Variables =
@@ -116,7 +119,8 @@ module Variables =
     [<Property>]
     let ``simple 1D array assignment by index works correctly`` (after: int) =
 
-        let inBounds = Gen.elements [ 0 .. 2 ] |> Arb.fromGen
+        let inBounds =
+            Gen.elements [ 0..2 ] |> Arb.fromGen
 
         Prop.forAll inBounds (fun index ->
             let str =
@@ -134,7 +138,7 @@ module Variables =
 
     [<Property>]
     let ``simple 2D array assignment by index works correctly`` (after: int) =
-        let gen = Gen.elements [ 0 .. 2 ]
+        let gen = Gen.elements [ 0..2 ]
 
         gen
         |> Gen.apply (gen |> Gen.map (fun a b -> (a, b)))
@@ -243,7 +247,7 @@ module Variables =
 
         match actual with
         | Ok _ -> false
-        | Error _ -> true            
+        | Error _ -> true
 
 module Structs =
     [<Property>]
@@ -305,7 +309,8 @@ module Structs =
                      var iner3 = 11.4;
                      var inner4 = 5;
                 }}
-            "        
+            "
+
         let actual = Interpreter.Executor.run str
         let expected = Value.Void |> Ok
 
@@ -520,7 +525,9 @@ module Structs =
             "
 
         let actual = Interpreter.Executor.run str
-        let expected = oldValue |> Value.IntValue |> Ok
+
+        let expected =
+            oldValue |> Value.IntValue |> Ok
 
         actual .=. expected
 
@@ -653,30 +660,34 @@ module Structs =
         actual .=. expected
 
 module Functions =
-    
+
     [<Fact>]
-    let ``parameters are passed to functions by value for floats``() =                
-        
-        let nfi = NumberFormatInfo();
-        nfi.NumberDecimalSeparator <- ".";
-        
-        let localParamValue:float = 0.1;
-        
+    let ``parameters are passed to functions by value for floats`` () =
+
+        let nfi = NumberFormatInfo()
+        nfi.NumberDecimalSeparator <- "."
+
+        let localParamValue: float = 0.1
+
         let program =
-            $"""         
+            $"         
             fun foo(x) {{x=0;}}
                     
             var localVar = {localParamValue.ToString(nfi)};   
             foo(localVar);
             localVar;
-            """
-        let actual = Interpreter.Executor.run program
-        let expected = localParamValue |> FloatValue |> Ok
-        
-        Assert.Equal(expected , actual)
-    
+            "
+
+        let actual =
+            Interpreter.Executor.run program
+
+        let expected =
+            localParamValue |> FloatValue |> Ok
+
+        Assert.Equal(expected, actual)
+
     [<Property>]
-    let ``parameters are passed to functions by value for ints`` (localParamValue:int) =                
+    let ``parameters are passed to functions by value for ints`` (localParamValue: int) =
         let program =
             $"         
             fun foo(x) {{x=0;}}
@@ -685,13 +696,17 @@ module Functions =
             foo(localVar);
             localVar;
             "
-        let actual = Interpreter.Executor.run program
-        let expected = localParamValue |> IntValue |> Ok
-        
+
+        let actual =
+            Interpreter.Executor.run program
+
+        let expected =
+            localParamValue |> IntValue |> Ok
+
         expected .=. actual
 
     [<Property>]
-    let ``function parameters shadow global variables`` (actualParamValue:int) (globalVarValue:int) =                
+    let ``function parameters shadow global variables`` (actualParamValue: int) (globalVarValue: int) =
         let program =
             $"
             var x = {globalVarValue};
@@ -700,13 +715,17 @@ module Functions =
             foo({actualParamValue});
             x;
             "
-        let actual = Interpreter.Executor.run program
-        let expected = globalVarValue |> IntValue |> Ok
-        
+
+        let actual =
+            Interpreter.Executor.run program
+
+        let expected =
+            globalVarValue |> IntValue |> Ok
+
         expected .=. actual
-    
+
     [<Fact>]
-    let ``accessing variable from function caller scope causes error``() =
+    let ``accessing variable from function caller scope causes error`` () =
         let program =
             $"fun foo() {{x=5;}}
             
@@ -716,36 +735,193 @@ module Functions =
             }}
             foo2();
             "
-        let actual = Interpreter.Executor.run program
-      
-        Assert.True (match actual with
-                       | Ok _ -> false
-                       | Error _ -> true)
 
-    [<Fact>]      
-    let ``accessing non existing variable from function causes error``() =
+        let actual =
+            Interpreter.Executor.run program
+
+        Assert.True(actual |> Result.isError)
+
+    [<Fact>]
+    let ``accessing non existing variable from function causes error`` () =
         let program =
             $"fun foo() {{y=5;}}
             var x = 10;
             foo();
             "
-        let actual = Interpreter.Executor.run program
-      
-        Assert.True (match actual with
-                       | Ok _ -> false
-                       | Error _ -> true)
-        
-    [<Property>]  
-    let ``accessing global variable from function works correctly`` v =        
-        let program =            
+
+        let actual =
+            Interpreter.Executor.run program
+
+        Assert.True(actual |> Result.isError)
+
+    [<Property>]
+    let ``accessing global variable from function works correctly`` v =
+        let program =
             $"
             var z = 5;
             fun foo() {{z={v};}}            
             foo();
             z;
             "
-        let actual = Interpreter.Executor.run program
+
+        let actual =
+            Interpreter.Executor.run program
+
         let expected = v |> Value.IntValue |> Ok
+
+        actual .=. expected
+
+    [<Fact>]
+    let ``accessing local function variable causes error`` =
+        let program =
+            $"
+            fun foo() {{var z=5;}}                        
+            z = 3;
+            "
+
+        let actual =
+            Interpreter.Executor.run program
+
+
+        Assert.True(actual |> Result.isError)
+
+module Loops =
+
+    [<Fact>]
+    let ``accessing iterator variable inside for loop is possible`` () =
+        let program =
+            $"
+                var max = 10;
+                for(var i = 0;i < max;i++)
+                {{
+                    var z = i;
+                }}                                
+            "
+
+        let actual =
+            Interpreter.Executor.run program
+
+        Assert.True(actual |> Result.isOk)
+
+
+    [<Fact>]
+    let ``accessing iterator variable outside for loop causes error`` () =
+        let program =
+            $"
+                var max = 10;
+                for(var i = 0;i < max;i++)
+                {{
+                    var z = i;
+                }}
+                i;
+            "
+
+        let actual =
+            Interpreter.Executor.run program
+
+
+        Assert.True(
+            actual
+            |> isErrorSpecific ("i" |> VariableNotDefined |> SemanticError)
+        )
+
+    [<Fact>]
+    let ``For without new variable initialization works correctly`` () =
+        let program =
+            $"
+                var max = 10;
+                var i = 100;
+                for(i = 0;i < max;i++)
+                {{
+                    var z = i;
+                }}
+                i;
+            "
+
+        let actual =
+            Interpreter.Executor.run program
+
+        let expected = 10 |> IntValue |> Ok
+        Assert.Equal(expected,actual)
         
-        actual .=.expected
-       
+    [<Fact>]
+    let ``accessing block variable outside for loop causes error`` () =
+        let program =
+            $"
+                var max = 10;
+                for(var i = 0;i < max;i++)
+                {{
+                    var z = 0;
+                }}
+                z;
+            "
+
+        let actual =
+            Interpreter.Executor.run program
+
+        Assert.True(
+            actual
+            |> isErrorSpecific ("z" |> VariableNotDefined |> SemanticError)
+        )
+
+    [<Fact>]
+    let ``accessing block variable outside while loop causes error`` () =
+        let program =
+            $"
+                var max = 10;
+                var x = 0;
+                while(x < max)
+                {{
+                    var z = 0;
+                    x++;
+                }}
+                z;
+            "
+
+        let actual =
+            Interpreter.Executor.run program
+
+        Assert.True(
+            actual
+            |> isErrorSpecific ("z" |> VariableNotDefined |> SemanticError)
+        )
+
+module Other =
+    [<Fact>]
+    let ``accessing block variable outside block causes error`` () =
+        let program =
+            $"                           
+                {{
+                    var z = 0;                   
+                }}
+                z;
+            "
+
+        let actual =
+            Interpreter.Executor.run program
+
+        Assert.True(
+            actual
+            |> isErrorSpecific ("z" |> VariableNotDefined |> SemanticError)
+        )
+
+module If =
+    [<Fact>]
+    let ``accessing block variable outside if causes error`` () =
+
+        let program =
+            $"
+                if(true)
+                {{
+                    var z = 0;                    
+                }}
+                z;
+            "
+
+        let actual =
+            Interpreter.Executor.run program
+
+        Assert.True(
+            actual
+            |> isErrorSpecific ("z" |> VariableNotDefined |> SemanticError)
+        )

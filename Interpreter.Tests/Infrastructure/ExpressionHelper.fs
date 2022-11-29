@@ -1,4 +1,4 @@
-﻿module ExpressionHelper
+﻿module Interpreter.Tests.Infrastructure.ExpressionHelper
 
 open Interpreter.AST
 open FsCheck

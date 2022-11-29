@@ -8,6 +8,8 @@ module Printer =
             match op with
             | Add -> "+"
             | Sub -> "-"
+            | Div -> "/"
+            | Mul -> "*"
         | LogicalOp op ->
             match op with
             | And -> "&&"
@@ -16,18 +18,19 @@ module Printer =
             match op with
             | Greater -> ">"
             | Equal -> "=="
+            | Less -> "<"
 
+    let unaryOpToStr = function
+        | Negate -> "!"
+        | Minus -> "-"
+        
     let rec expressionToStr (exp: Expression) =
         match exp with
         | Constant c -> c |> Value.toStr
         | Binary b ->
-            sprintf
-                "%s %s %s"
-                (b.LeftOperand |> expressionToStr)
-                (b.BinaryOp |> operatorToStr)
-                (b.RightOperand |> expressionToStr)
-        | SimpleUnary _ -> failwith "Not Implemented"
-        | Assignment _ -> failwith "Not Implemented"
+            $"%s{b.LeftOperand |> expressionToStr} %s{b.BinaryOp |> operatorToStr} %s{b.RightOperand |> expressionToStr}"
+        | SimpleUnary(unaryOp, expression) -> $"{unaryOp |> unaryOpToStr}{expression |> expressionToStr}"
+        | Assignment(lExp, rExp)  -> $"{lExp |> expressionToStr} = {rExp |> expressionToStr}" 
         | FunCall fc ->
             sprintf
                 "%s(%s)"
@@ -38,7 +41,10 @@ module Printer =
         | Mutable me ->
             match me with
             | Var ident -> ident |> Identifier.asString
-
+            | IndexedVar (mutableExpression, expression) ->
+                $"{mutableExpression |> Mutable |> expressionToStr}[{expression |> expressionToStr}]"
+            | MemberAccess (mutableExpression, identifier) ->
+                $"{mutableExpression |> Mutable |> expressionToStr}.{identifier |> Identifier.asString}"
 
     let rec scopedStmtToStr (stmt: ScopedStatement) =
         let initializerToStr initializer =
@@ -52,7 +58,8 @@ module Printer =
             sprintf
                 "%s = %s"
                 (vd.Name |> Identifier.asString)
-                (vd.InitExpression |> Option.defaultValue (Expression.voidConstant())
+                (vd.InitExpression
+                 |> Option.defaultValue (Expression.voidConstant ())
                  |> ExpressionStatement
                  |> scopedStmtToStr)
         | BlockStatement block ->
@@ -66,7 +73,9 @@ module Printer =
                 "if %s \n\t%s\nelse\n\t%s"
                 (is.Condition |> expressionToStr)
                 (is.OnTrue |> scopedStmtToStr)
-                (is.OnFalse |> Option.defaultValue Empty |> scopedStmtToStr)
+                (is.OnFalse
+                 |> Option.defaultValue Empty
+                 |> scopedStmtToStr)
         | WhileStatement ws -> sprintf "while %s\n\t%s" (ws.Condition |> expressionToStr) (ws.Body |> scopedStmtToStr)
         | ForStatement fs ->
             sprintf
@@ -85,7 +94,7 @@ module Printer =
                 (fd.Name |> Identifier.asString)
                 (fd.Parameters
                  |> List.map Identifier.asString
-                 |> List.reduce (fun a b -> sprintf "%s, %s" a b))
+                 |> List.reduce (fun a b -> $"%s{a}, %s{b}"))
                 (fd.Body
                  |> BlockStatement
                  |> ScopedStatement
@@ -95,4 +104,4 @@ module Printer =
     let toStr (Program statementsList) =
         statementsList
         |> List.map stmtToStr
-        |> List.reduce (fun acc s -> sprintf "%s\n%s" acc s)
+        |> List.reduce (fun acc s -> $"%s{acc}\n%s{s}")
