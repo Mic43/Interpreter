@@ -584,6 +584,26 @@ module Structs =
         actual .=. expected
 
     [<Property>]
+    let ``Two structures can have fields of the same name``  (val1: int) (val2: int) =
+       
+        let firstStrName = "first"        
+        let secondStrName = "second"
+        let fieldName = "field1"
+        let str =
+            $"
+                struct {firstStrName} {{
+                    var {fieldName} = {val1};
+                }}
+                struct {secondStrName} {{
+                    var {fieldName} = {val2};
+                }}            
+            "
+        let actual = Interpreter.Executor.run str
+        let expected = Value.Void |> Ok
+        
+        actual .=. expected
+        
+    [<Property>]
     let ``Memmber access operator sets nested field value correctly`` (oldValue: int) (newValue: int) =
         let strName = "aaa"
         let fieldName = "inner"
@@ -596,7 +616,7 @@ module Structs =
                     var {nestedFieldName} = {oldValue};
                 }}
                 struct {strName} {{
-                        var {fieldName}  = {nestedStrName}{{}};
+                    var {fieldName}  = {nestedStrName}{{}};
                 }}
                 var z =  {strName}{{}};
                 z.{fieldName}.{nestedFieldName} = {newValue};
@@ -658,7 +678,7 @@ module Structs =
             |> Ok
 
         actual .=. expected
-
+    
 module Functions =
 
     [<Fact>]

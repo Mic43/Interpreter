@@ -320,7 +320,7 @@ module SemanticAnalyser =
         | UserTypeDeclaration userType ->
             match userType.Kind with
             | Struct ``struct`` ->
-                let statements =
+                let fieldDeclarationStatements =
                     ``struct``.Members
                     |> Map.values
                     |> Seq.map (fun mb ->
@@ -330,11 +330,19 @@ module SemanticAnalyser =
                             |> VarDeclarationStatement
                             |> ScopedStatement)
 
-                statements
+                do environment |> Environment.nestNewEmptyEnvironment
+
+                fieldDeclarationStatements
                 |> Seq.map (analyseRec >> Continuation.fromFun)
                 |> Seq.toList
                 |> TraversableContinuationList.sequence
-                |> Continuation.map ((List.collect id) >> appendCurrentNodeResults)
+                |> Continuation.map (
+                    (List.collect id)
+                    >> appendCurrentNodeResults
+                    >> (fun res ->
+                        do environment |> Environment.returnToParent
+                        res)
+                )
                 |> Continuation.run cnt
 
     let analyseStatement (nodeAnalyser: StatementAnalyser) environment (stmt: Statement) =
