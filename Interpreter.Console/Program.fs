@@ -11,13 +11,14 @@ open System
 // let interpret p str =
 //     match run p str with
 //     | Success (result, _, _) -> Interpreter.run result
-//     | Failure (errorMsg, _, _) -> 
+//     | Failure (errorMsg, _, _) ->
 //         printfn "Failure: %s" errorMsg
 //         Errors.createResult ErrorType.RuntimeError "error parsing"
 
 [<EntryPoint>]
-let main argv =      
-    let str = "
+let main argv =
+    let str =
+        "
         var global = \"dsds\";
         
         fun fib ( n ) 
@@ -128,7 +129,7 @@ let main argv =
         //println (zzz);
 
             //aa(10);
-        //println(silnia(3));
+        println(fib(1));
         //println(foo([1,2,5,-9,7]));
        // var str = \"kwakwa\";
        // var n = 3;
@@ -152,15 +153,24 @@ let main argv =
     // let z = ref v |> List.singleton
 
     // printfn "%A" z.[0]
-    
+
     // z.[0].Value <- 6
 
     // printfn "%A" z.[0]
+
+    let str =
+        """
+         fun fib ( n ) 
+        {     
+            //var re = 4;       
+            if (n == 0 || n == 1) 
+                return 1;            
+            return fib( n - 1) + fib (n-2);
+        } 
     
-    // let str = """
-    //             var x = 5;           
-    //             """;
-                    
+               fib(1);         
+                """
+
     Interpreter.Executor.run str |> printf "%A"
     Console.ReadLine() |> ignore
-    0 
+    0

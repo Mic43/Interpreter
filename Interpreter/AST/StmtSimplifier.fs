@@ -42,7 +42,7 @@ module StmtSimplifier =
             | IfStatement ifStmt -> ifStmt |> simplifyIf
             | WhileStatement whileStmt -> whileStmt |> simplifyWhile |> WhileStatement 
             | ForStatement forStmt -> forStmt |> simplifyForStmt |> ForStatement
-            | ReturnStatement exp -> exp |> simplifyExp |> ExpressionStatement
+            | ReturnStatement exp -> exp |> simplifyExp |> ReturnStatement
             | Empty -> stmt
 
         match stmt with
