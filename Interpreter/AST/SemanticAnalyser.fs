@@ -253,7 +253,6 @@ module SemanticAnalyser =
                 |> Continuation.run cnt
             | ForStatement forStatement ->
                 continuation {
-
                     let! initializer =
                         match forStatement.Initializer with
                         | ExpressionInit expression ->
@@ -298,22 +297,25 @@ module SemanticAnalyser =
                 |> cnt
             | Empty -> [] |> cnt
         | FunDeclaration funDecl ->
-            funDecl.Parameters
-            |> List.map (fun param -> (param, ref Value.Void))
-            |> Map.ofList
-            |> Environment.nestNewEnvironment environment
+            do
+                funDecl.Parameters
+                |> List.map (fun param -> (param, ref Value.Void))
+                |> Map.ofList
+                |> Environment.nestNewEnvironment environment
 
-            funDecl.Body
-            |> BlockStatement
-            |> ScopedStatement
-            |> analyseRec
-            |> Continuation.fromFun
-            |> Continuation.map (
-                appendCurrentNodeResults
-                >> (fun res ->
-                    environment |> Environment.returnToParent
-                    res)
-            )
+            continuation {
+                let curNodeRes = analyseCurrentStatement ()
+
+                let! bodyRes =
+                    funDecl.Body
+                    |> BlockStatement
+                    |> ScopedStatement
+                    |> analyseRec
+                    |> Continuation.fromFun
+
+                do environment |> Environment.returnToParent
+                return curNodeRes @ bodyRes
+            }
             |> Continuation.run cnt
         | UserTypeDeclaration userType ->
             match userType.Kind with

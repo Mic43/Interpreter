@@ -772,7 +772,7 @@ module Functions =
         actual .=. expected
 
     [<Fact>]
-    let ``accessing local function variable causes error`` =
+    let ``accessing local function variable causes error`` () =
         let program =
             $"
             fun foo() {{var z=5;}}                        
@@ -784,7 +784,27 @@ module Functions =
 
 
         Assert.True(actual |> Result.isError)
+        
+    [<Fact>]
+    let ``defining recursive function is possible``() =
+        let program =
+            $"
+              fun fib ( n ) 
+                {{     
+                    //var re = 4;       
+                    if (n == 0 || n == 1) 
+                        return 1;            
+                    return fib( n - 1) + fib (n-2);
+                }} 
+            "
 
+        let actual =
+            Interpreter.Executor.run program
+
+
+        Assert.True(actual |> Result.isOk)
+    
+    
 module Loops =
 
     [<Fact>]
