@@ -158,18 +158,17 @@ let main argv =
 
     // printfn "%A" z.[0]
 
-    // let str =
-    //     """
-    //      fun fib ( n ) 
-    //     {     
-    //         //var re = 4;       
-    //         if (n == 0 || n == 1) 
-    //             return 1;            
-    //         return fib( n - 1) + fib (n-2);
-    //     } 
-    //
-    //            print(fib(5));         
-    //             """
+    let str = 
+         "var x = 5;
+         fun foo()
+         {
+         }
+         fun foo2()
+         {
+            goo();
+         }
+         var x = 14;
+         "
 
     Interpreter.Executor.run str |> printf "%A"
     Console.ReadLine() |> ignore

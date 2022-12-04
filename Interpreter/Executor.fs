@@ -34,21 +34,25 @@ module Executor =
         |> Environment.fromDefaultFunctions
 
     let run programString =
-        let semanticErrorsMapper (analyserResults: AnalyserResult list) =
+        let defaultSemanticErrorsMapper (analyserResults: AnalyserResult list) =
             analyserResults
             |> List.map (fun ar -> "" |>  ExecuteError.create (ar |> SemanticError))
 
+        let withPositionSemanticErrorsMapper (analyserResults: (AnalyserResult*FParsec.Position) list) =
+            analyserResults
+            |> List.map (fun (ar,pos) -> $"Line: {pos.Line}" |>  ExecuteError.create (ar |> SemanticError))
+        
         let preprocess = preprocessComments
 
-        let parse str =
-            let parser = Parser.Statement.pProgram
-
+        let parse parser str =
+            
             match str |> run parser with
             | Success (program, _, _) -> program |> Result.Ok
             | Failure (errorMsg, _, _) ->
                 errorMsg
                 |> ExecuteError.createResult ErrorType.ParseError
-
+                  
+            
         let optimize program =
             let expOptimizer =
                 ExpSimplifier.simplifyNode
@@ -58,21 +62,32 @@ module Executor =
                 StmtSimplifier.simplifyProgram expOptimizer
 
             program |> programOptimizer |> Ok
-
+        let noOptimize program = program
+        // let analyser =
+        //     SemanticAnalyser.analyseProgram
         let analyser =
-            SemanticAnalyser.analyseProgram
+            SemanticAnalyser.analyseProgramTest
 
-        let analyse environment program =
+        let analyse semanticErrorsMapper environment program =
             let res = analyser environment program
 
             if res |> List.isEmpty then
                 program |> Ok
             else
                 res |> semanticErrorsMapper |> List.head |> Error
+                
+        let analyseTest semanticErrorsMapper environment program =
+            let res = analyser environment program
+
+            if res |> List.isEmpty then
+                program |> Ok
+            else
+                res |> withPositionSemanticErrorsMapper |> List.head |> Error
 
         programString
         |> preprocess
-        |> parse
-        |> Result.bind (createEnvironment () |> analyse)
+        |> parse Parser.Statement.pProgramTest
+        |> Result.bind (createEnvironment () |> (analyseTest withPositionSemanticErrorsMapper))
+        |> Result.map ((fun l -> l |> List.map (fun (stmt,_) -> stmt) ) >> Program.Of) 
         |> Result.bind optimize
         |> Result.bind (createEnvironment () |> Interpreter.run)

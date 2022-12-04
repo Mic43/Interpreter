@@ -1,6 +1,7 @@
 namespace Interpreter.AST
 
 open System.Collections.Generic
+open FParsec
 open Microsoft.FSharp.Core
 
 
@@ -353,3 +354,7 @@ module SemanticAnalyser =
         | Program statements ->
             statements
             |> List.collect (analyseStatement singleStatementAnalyser environment)
+    
+    let analyseProgramTest environment (stmtsWithLineNmbs:(Statement*Position) list) =
+        let analyse = (analyseStatement singleStatementAnalyser environment)         
+        stmtsWithLineNmbs |> List.collect (fun (stmt,pos) -> stmt |> analyse |> List.map (fun ar -> (ar,pos)))
