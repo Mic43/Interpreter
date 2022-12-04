@@ -122,7 +122,7 @@ module Statement =
         .>> spaces
         .>> pCloseCurlyBracket
         |>> Block.Create
-        <!> "block"
+        // <!> "block"
 
     let private pScopedStatement block (blockImpl: Parser<Block, unit> ref) =
         let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()

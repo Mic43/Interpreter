@@ -79,7 +79,7 @@ let main argv =
         struct Triangle
         {
             var p1 = Point{};
-            var p2 = p1;
+            var p2;
             var p3 = Point{};
         }
         struct Poly
@@ -158,18 +158,18 @@ let main argv =
 
     // printfn "%A" z.[0]
 
-    let str =
-        """
-         fun fib ( n ) 
-        {     
-            //var re = 4;       
-            if (n == 0 || n == 1) 
-                return 1;            
-            return fib( n - 1) + fib (n-2);
-        } 
-    
-               fib(1);         
-                """
+    // let str =
+    //     """
+    //      fun fib ( n ) 
+    //     {     
+    //         //var re = 4;       
+    //         if (n == 0 || n == 1) 
+    //             return 1;            
+    //         return fib( n - 1) + fib (n-2);
+    //     } 
+    //
+    //            print(fib(5));         
+    //             """
 
     Interpreter.Executor.run str |> printf "%A"
     Console.ReadLine() |> ignore

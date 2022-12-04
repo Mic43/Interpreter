@@ -1,5 +1,6 @@
 module Interpreter.Tests.SemanticAnalyserTest
 
+open Interpreter.Tests.Infrastructure
 open Xunit
 open Interpreter.AST
 open FsCheck.Xunit
@@ -356,7 +357,7 @@ module StatementAnalyserTest =
             [ "foo" |> FunctionNotDefined ] |> Some
 
         Assert.Equal(expected, actual)
-        
+
     [<Fact>]
     let ``calling not existing function from inside of other function causes error`` () =
 
@@ -374,7 +375,7 @@ module StatementAnalyserTest =
             [ "boo" |> FunctionNotDefined ] |> Some
 
         Assert.Equal(expected, actual)
-        
+
     [<Fact>]
     let ``referring to not existing variable causes error`` () =
 
@@ -390,7 +391,7 @@ module StatementAnalyserTest =
             [ "z" |> VariableNotDefined ] |> Some
 
         Assert.Equal(expected, actual)
-        
+
     [<Fact>]
     let ``referring to not existing variable inside function causes error`` () =
 
@@ -409,7 +410,7 @@ module StatementAnalyserTest =
             [ "b" |> VariableNotDefined ] |> Some
 
         Assert.Equal(expected, actual)
-        
+
     [<Fact>]
     let ``referring to not existing variable as a function actual parameter causes error`` () =
 
@@ -427,6 +428,7 @@ module StatementAnalyserTest =
             [ "x" |> VariableNotDefined ] |> Some
 
         Assert.Equal(expected, actual)
+
     [<Fact>]
     let ``defining two functions with the same name causes error`` () =
 
@@ -447,3 +449,26 @@ module StatementAnalyserTest =
             [ "id" |> FunctionAlreadyDefined ] |> Some
 
         Assert.Equal(expected, actual)
+
+    [<Property>]
+    let ``return statement in the global scope causes error`` () =
+
+        (fun exp ->
+            let actual =
+                $"
+                fun id(a)
+                {{                
+                    return a;
+                }}              
+                return {exp |> Printer.expressionToStr};
+                "
+                |> runAnalyser
+
+            let expected =
+                [ MisplacedReturnStatement ] |> Some
+
+            expected .=. actual)
+        |> Prop.forAll (
+            Expressions.constantExpressionTree
+            |> Arb.fromGen
+        )

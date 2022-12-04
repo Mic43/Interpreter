@@ -6,7 +6,8 @@ open Interpreter.AST
 type ParserU<'T> = Parser<'T, unit>
 
 module Common =
-    let pListSeparator: ParserU<char> = pchar ','
+    let pListSeparator: ParserU<char> =
+        pchar ','
 
     let (<!>) (p: Parser<_, _>) label : Parser<_, _> =
         fun stream ->
@@ -17,30 +18,74 @@ module Common =
 
     let trimmed p = spaces >>. p .>> spaces
 
+    let withPosition f (parser: Parser<'T, _>) : Parser<'V, _> =
+        fun stream ->
+            let originalReply = parser stream
+
+            let mappedReply =
+                if originalReply.Status = ReplyStatus.Ok then
+                    new Reply<'V>(f originalReply.Result stream.Position)
+                else
+                    new Reply<'V>(originalReply.Status, originalReply.Error)
+
+            mappedReply
+
 module Reserved =
     let openBracket: ParserU<char> = pchar '('
     let closeBracket: ParserU<char> = pchar ')'
-    let pOpenCurlyBracket: ParserU<char> = pchar '{'
-    let pCloseCurlyBracket: ParserU<char> = pchar '}'
-    let varKeyword: ParserU<string> = pstring "var"
-    let funKeyword: ParserU<string> = pstring "fun"
-    let structKeyword: ParserU<string> = pstring "struct"
-    let initVarOpKeyWord: ParserU<char> = pchar '='
+
+    let pOpenCurlyBracket: ParserU<char> =
+        pchar '{'
+
+    let pCloseCurlyBracket: ParserU<char> =
+        pchar '}'
+
+    let varKeyword: ParserU<string> =
+        pstring "var"
+
+    let funKeyword: ParserU<string> =
+        pstring "fun"
+
+    let structKeyword: ParserU<string> =
+        pstring "struct"
+
+    let initVarOpKeyWord: ParserU<char> =
+        pchar '='
+
     let pSemicolon: ParserU<char> = pchar ';'
-    let ifKeyword: ParserU<string> = pstring "if"
-    let elseKeyword: ParserU<string> = pstring "else"
-    let forKeyword: ParserU<string> = pstring "for"
-    let whileKeyword: ParserU<string> = pstring "while"
-    let openSquareBracket: ParserU<string> = pstring "["
-    let closeSquareBracket: ParserU<string> = pstring "]"
-    let returnKeyword:ParserU<string> = pstring "return"
+
+    let ifKeyword: ParserU<string> =
+        pstring "if"
+
+    let elseKeyword: ParserU<string> =
+        pstring "else"
+
+    let forKeyword: ParserU<string> =
+        pstring "for"
+
+    let whileKeyword: ParserU<string> =
+        pstring "while"
+
+    let openSquareBracket: ParserU<string> =
+        pstring "["
+
+    let closeSquareBracket: ParserU<string> =
+        pstring "]"
+
+    let returnKeyword: ParserU<string> =
+        pstring "return"
+
     let comma: ParserU<char> = pchar ','
-    let memmberAccessOperator: ParserU<char> = pchar '.'
+
+    let memmberAccessOperator: ParserU<char> =
+        pchar '.'
+
 module Value =
     open Reserved
     open Common
 
-    let pInt: Parser<Value, unit> = pint32 |>> IntValue
+    let pInt: Parser<Value, unit> =
+        pint32 |>> IntValue
 
     let pFloat: Parser<Value, unit> =
         let numberFormat =
@@ -80,20 +125,16 @@ module Value =
                 let hex2int c = (int c &&& 15) + (int c >>> 6) * 9
 
                 str "u"
-                >>. pipe4
-                        hex
-                        hex
-                        hex
-                        hex
-                        (fun h3 h2 h1 h0 ->
-                            (hex2int h3) * 4096
-                            + (hex2int h2) * 256
-                            + (hex2int h1) * 16
-                            + hex2int h0
-                            |> char
-                            |> string)
+                >>. pipe4 hex hex hex hex (fun h3 h2 h1 h0 ->
+                    (hex2int h3) * 4096
+                    + (hex2int h2) * 256
+                    + (hex2int h1) * 16
+                    + hex2int h0
+                    |> char
+                    |> string)
 
-            let escapedCharSnippet = str "\\" >>. (escape <|> unicodeEscape)
+            let escapedCharSnippet =
+                str "\\" >>. (escape <|> unicodeEscape)
 
             let normalCharSnippet =
                 manySatisfy (fun c -> c <> '"' && c <> '\\')
@@ -104,18 +145,16 @@ module Value =
         stringLiteral |>> StringValue
 
     let pBool = pTrue <|> pFalse
+
     let private pValueInternal () =
         // let list, listImp =
         //     createParserForwardedToRef<Value, unit> ()
 
         let pVal =
-          //  list
-             attempt pFloat
-            <|> pInt
-            <|> pBool
-            <|> pString
+            //  list
+            attempt pFloat <|> pInt <|> pBool <|> pString
 
-       // do listImp := pList pVal
+        // do listImp := pList pVal
         pVal
 
     let pValue = pValueInternal ()
