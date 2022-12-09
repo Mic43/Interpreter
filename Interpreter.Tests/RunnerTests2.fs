@@ -40,7 +40,7 @@ module Variables =
                 |> FunCall
                 |> ExpressionStatement
                 |> ScopedStatement ]
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ()) 
 
@@ -65,7 +65,7 @@ module Variables =
         let program =
             (fun _ -> vDecl)
             |> List.init (repeatsCount.Get + 1)
-            |> Program
+            |> Statements
 
         let actual =  program |> Interpreter.run (Environment.createEmpty ()) 
 
@@ -104,7 +104,7 @@ module Variables =
             vDecl
             |> (blockize level.Get)
             |> List.map ScopedStatement
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ()) 
 
@@ -125,7 +125,7 @@ module Variables =
               (varIdent |> Var |> Mutable |> ExpressionStatement) ]
             |> (blockize (level.Get - 1))
             |> List.map ScopedStatement
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ()) 
         actual |> Option.ofResult |> Option.isSome
@@ -150,7 +150,7 @@ module Variables =
         let program =
             [ vDecl ] @ blockize (level.Get - 1) [ varUsage ]
             |> List.map ScopedStatement
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ()) 
 
@@ -184,7 +184,7 @@ module Variables =
             [ vDecl
               (varAssignment 0 maxNestCount.Get)
               |> Statement.FromExpression ]
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ()) 
 
@@ -216,7 +216,7 @@ module Variables =
               whileStmt
               (Expression.var "i") |> ExpressionStatement ]
             |> List.map ScopedStatement
-            |> Program
+            |> Statements
 
         let expected = n.Get |> IntValue |> Result.Ok
         let actual = program |> Interpreter.run (Environment.createEmpty ()) 
@@ -269,7 +269,7 @@ module Programs =
                   b |> Expression.intConstant ]
             |> Statement.FromExpression
 
-        let program = [ addFunDecl; funCall ] |> Program
+        let program = [ addFunDecl; funCall ] |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ())
         let expected = (a + b) |> IntValue |> Result.Ok
@@ -324,7 +324,7 @@ module Programs =
             [ fibDecl
               (Expression.funCall funName [ Expression.intConstant n ])
               |> Statement.FromExpression ]
-            |> Program
+            |> Statements
 
         let expected = fib (n) |> IntValue |> Result.Ok
         let actual = program |> Interpreter.run (Environment.createEmpty ())
@@ -337,7 +337,7 @@ module UserTypes =
         let program =
             [ Statement.structDeclare name.Get Map.empty
               Statement.structDeclare name.Get Map.empty ]
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ())
 
@@ -350,7 +350,7 @@ module UserTypes =
         let program =
             [ Statement.structDeclare name.Get Map.empty
               Statement.structDeclare $"{name.Get}{name2.Get}" Map.empty ]
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ())
 
@@ -363,7 +363,7 @@ module UserTypes =
         =
         let program =
             [ Statement.structDeclare name.Get ([ (fieldName.Get, None) ] |> Map.ofList) ]
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ())
 
@@ -379,7 +379,7 @@ module UserTypes =
                   name.Get
                   ([ (fieldName.Get, Expression.intConstant 1 |> Some) ]
                    |> Map.ofList) ]
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ())
 
@@ -398,7 +398,7 @@ module UserTypes =
                   name.Get
                   ([ (fieldName.Get, Expression.var varName.Get |> Some) ]
                    |> Map.ofList) ]
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ())
 
@@ -409,7 +409,7 @@ module UserTypes =
         let program =
             [ Statement.structDeclare structName.Get Map.empty
               Statement.varDeclare varName.Get (Expression.structInitialize structName.Get Map.empty) ]
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ())
 
@@ -432,7 +432,7 @@ module UserTypes =
               Statement.varDeclare structVarName.Get (Expression.structInitialize structName.Get Map.empty)
               Expression.var structVarName.Get
               |> Statement.FromExpression ]
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ())
 
@@ -471,7 +471,7 @@ module UserTypes =
 
               Expression.var structVarName.Get
               |> Statement.FromExpression ]
-            |> Program
+            |> Statements
 
         let actual = program |> Interpreter.run (Environment.createEmpty ())
 

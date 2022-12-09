@@ -1,5 +1,6 @@
 ﻿namespace Interpreter.AST
 
+open FParsec
 open FSharpPlus
 
 type VarDeclaration =
@@ -82,9 +83,14 @@ type Statement =
     static member FromExpression(exp: Expression) =
         exp |> ExpressionStatement |> ScopedStatement
 
+type StatementWithInfo =
+    { Statement: Statement
+      Info: StatementPosition }
+
 type Program =
-    | Program of Statement list
-    static member Of statements = statements |> Program
+    | Statements of Statement list
+    // | StatementsWithInfo of StatementWithInfo list
+    static member Of statements = statements |> Statements
 
 module Statement =
     let structDeclare name (members: Map<string, Expression option>) =

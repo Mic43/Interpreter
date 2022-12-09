@@ -54,4 +54,4 @@ module StmtSimplifier =
 
     let simplifyProgram simplifyExp =
         function
-        | Program p -> p |> List.map (simplifyExp |> simplify) |> Program
+        | Statements p -> p |> List.map (simplifyExp |> simplify) |> Statements

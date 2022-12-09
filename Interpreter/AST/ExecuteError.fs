@@ -8,9 +8,11 @@ type AnalyserResult =
     | FunctionNotDefined of string
     | FunctionAlreadyDefined of string
     | ExpressionMustBeLValue of string
+    
+type StatementPosition = { Line: int64; Column: int64 }
 type ErrorType =        
     | ParseError
-    | SemanticError of AnalyserResult
+    | SemanticError of (AnalyserResult * StatementPosition)
     | RuntimeError
 
 type ExecuteError = { Message: string; Type: ErrorType }

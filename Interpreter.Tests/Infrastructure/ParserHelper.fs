@@ -4,11 +4,10 @@ module Interpreter.Tests.Infrastructure.ParserHelper
 open FParsec.CharParsers
 open Interpreter.AST
 
-let isErrorSpecific eType (result:Result<Value,ExecuteError>)  =
-    match (result |> Result.mapError (fun e -> e.Type = eType)) with
-    | Ok _-> false
-    | Error v -> v
-
+let isErrorSpecific (ar:AnalyserResult) (result:Result<Value,ExecuteError list>)  =
+    match (result) with // |> Result.mapError (fun e -> (e |> List.exactlyOne).Type = eType)) with  
+    | Error [{Type = SemanticError(analyserResult, _)}] -> analyserResult = ar
+    | _ -> false
 let map (f:'a->'b) pResult =
     match pResult with
     | Success (r, u, o) -> (r |> f, u, o) |> Success

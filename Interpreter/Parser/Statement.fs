@@ -12,7 +12,7 @@ module Statement =
     let private pIdentList =
         sepBy (spaces >>. pIdentifier .>> spaces) pListSeparator
 
-    let private  pExpr = pExpr ()
+    let private pExpr = pExpr ()
 
     let private pFunDecl pBlock =
         funKeyword
@@ -41,7 +41,8 @@ module Statement =
         pipe2
             (structKeyword
              >>. (spaces1 >>. pIdentifier .>> spaces))
-            (pOpenCurlyBracket >>. ((many (pVarDecl |> trimmed)) |> trimmed)
+            (pOpenCurlyBracket
+             >>. ((many (pVarDecl |> trimmed)) |> trimmed)
              .>> pCloseCurlyBracket
              .>> spaces)
             (fun name declList ->
@@ -55,7 +56,8 @@ module Statement =
 
     let private pIfStmt pScopedStmt =
 
-        let pElseBranch = elseKeyword >>. spaces >>. pScopedStmt
+        let pElseBranch =
+            elseKeyword >>. spaces >>. pScopedStmt
 
         pipe3
             (ifKeyword
@@ -122,10 +124,11 @@ module Statement =
         .>> spaces
         .>> pCloseCurlyBracket
         |>> Block.Create
-        // <!> "block"
+    // <!> "block"
 
     let private pScopedStatement block (blockImpl: Parser<Block, unit> ref) =
-        let ifStmt, ifStmtImp = createParserForwardedToRef<If, unit> ()
+        let ifStmt, ifStmtImp =
+            createParserForwardedToRef<If, unit> ()
 
         let forStmt, forStmtImp =
             createParserForwardedToRef<For, unit> ()
@@ -133,7 +136,8 @@ module Statement =
         let whileStmt, whileStmtImp =
             createParserForwardedToRef<While, unit> ()
 
-        let pVarStmt = pVarDecl |>> VarDeclarationStatement
+        let pVarStmt =
+            pVarDecl |>> VarDeclarationStatement
 
         let pExprStmt =
             pExpr .>> spaces .>> pSemicolon
@@ -162,9 +166,14 @@ module Statement =
         let block, blockImpl =
             createParserForwardedToRef<Block, unit> ()
 
-        let funDeclStmt = pFunDecl block |>> FunDeclaration
-        let userTypeDeclStmt = pStructDecl |>> UserTypeDeclaration
-        let pScoped = pScopedStatement block blockImpl
+        let funDeclStmt =
+            pFunDecl block |>> FunDeclaration
+
+        let userTypeDeclStmt =
+            pStructDecl |>> UserTypeDeclaration
+
+        let pScoped =
+            pScopedStatement block blockImpl
 
         spaces
         >>. (funDeclStmt
@@ -172,11 +181,15 @@ module Statement =
              <|> (pScoped |>> ScopedStatement))
 
     let private pStatementWithInfo () =
-        pStatement () |> withPosition (fun stmt pos -> stmt,pos)
+        pStatement ()
+        |> withPosition (fun stmt pos ->
+            { Statement = stmt
+              Info = { Line = pos.Line; Column = pos.Column } })
+
     let pProgram =
         let stmt = pStatement ()
-
         (many1 stmt) .>> eof |>> Program.Of
+
     let pProgramTest =
         let stmt = pStatementWithInfo ()
-        (many1 stmt) .>> eof 
+        (many1 stmt) .>> eof

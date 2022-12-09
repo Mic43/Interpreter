@@ -166,8 +166,11 @@ let main argv =
          fun foo2()
          {
             goo();
+            v = v - x;
          }
          var x = 14;
+         return 5;
+         v++;
          "
 
     Interpreter.Executor.run str |> printf "%A"

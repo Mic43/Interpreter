@@ -862,7 +862,7 @@ module Loops =
 
         Assert.True(
             actual
-            |> isErrorSpecific ("i" |> VariableNotDefined |> SemanticError)
+            |> isErrorSpecific ("i" |> VariableNotDefined )
         )
 
     [<Fact>]
@@ -901,7 +901,7 @@ module Loops =
 
         Assert.True(
             actual
-            |> isErrorSpecific ("z" |> VariableNotDefined |> SemanticError)
+            |> isErrorSpecific ("z" |> VariableNotDefined )
         )
 
     [<Fact>]
@@ -923,7 +923,7 @@ module Loops =
 
         Assert.True(
             actual
-            |> isErrorSpecific ("z" |> VariableNotDefined |> SemanticError)
+            |> isErrorSpecific ("z" |> VariableNotDefined )
         )
 
 module Other =
@@ -942,7 +942,7 @@ module Other =
 
         Assert.True(
             actual
-            |> isErrorSpecific ("z" |> VariableNotDefined |> SemanticError)
+            |> isErrorSpecific ("z" |> VariableNotDefined )
         )
 
 module If =
@@ -963,5 +963,5 @@ module If =
 
         Assert.True(
             actual
-            |> isErrorSpecific ("z" |> VariableNotDefined |> SemanticError)
+            |> isErrorSpecific ("z" |> VariableNotDefined )
         )

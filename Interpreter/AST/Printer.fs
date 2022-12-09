@@ -101,7 +101,7 @@ module Printer =
                  |> stmtToStr)
         | ScopedStatement stmt -> scopedStmtToStr stmt
 
-    let toStr (Program statementsList) =
+    let toStr (Statements statementsList) =
         statementsList
         |> List.map stmtToStr
         |> List.reduce (fun acc s -> $"%s{acc}\n%s{s}")

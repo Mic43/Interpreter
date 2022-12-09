@@ -28,7 +28,7 @@ let idFuncProgram inputVal =
       |> FunCall
       |> ExpressionStatement
       |> ScopedStatement ]
-    |> Program
+    |> Statements
 
 let blockize maxLevel statements =
     let rec blockizeRec maxLevel curLevel statements =

@@ -86,7 +86,7 @@ module Value =
 
     let ignoreResuls (res: Result<Value list, ExecuteError>) = res |> Result.map (fun _ -> Void)
 
-    let getLastResultOrVoid (res: Result<Value list, ExecuteError>) =
+    let getLastResultOrVoid (res: Result<Value list, ExecuteError list>) =
         res
         |> Result.map (fun vl -> vl |> (List.tryLast >> (Option.defaultValue Void)))
 

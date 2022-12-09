@@ -4,9 +4,10 @@ open FSharpPlus
 open System.Collections.Generic
 
 module Interpreter =
-    let run environment (Program statementsList) =
+    let run environment (Statements statementsList) =
         statementsList
         |> Traversable.traverseMTail (StmtEvaluator.evaluate environment)
+        |> Result.mapError List.singleton
         |> Value.getLastResultOrVoid
 
     let runWithDefaultEnvironment program =

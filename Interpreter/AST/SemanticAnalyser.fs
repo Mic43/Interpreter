@@ -351,10 +351,13 @@ module SemanticAnalyser =
 
     let analyseProgram environment =
         function
-        | Program statements ->
+        | Statements statements ->
             statements
             |> List.collect (analyseStatement singleStatementAnalyser environment)
-    
-    let analyseProgramTest environment (stmtsWithLineNmbs:(Statement*Position) list) =
-        let analyse = (analyseStatement singleStatementAnalyser environment)         
-        stmtsWithLineNmbs |> List.collect (fun (stmt,pos) -> stmt |> analyse |> List.map (fun ar -> (ar,pos)))
+
+    let analyseProgramTest environment (stmtsWithLineNmbs: StatementWithInfo list) =
+        let analyse =
+            (analyseStatement singleStatementAnalyser environment)
+
+        stmtsWithLineNmbs
+        |> List.collect (fun stmtInfo-> stmtInfo.Statement |> analyse |> List.map (fun ar -> (ar, stmtInfo.Info)))
