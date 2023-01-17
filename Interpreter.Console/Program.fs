@@ -93,6 +93,7 @@ let main argv =
         }
         fun createTriangle(p1,p2,p3)
         {
+            addPoints(p1,p1) = p1;
             return Triangle{p1=p1,p2=p2,p3=p3};
         }
 
@@ -148,6 +149,7 @@ let main argv =
        //// println(3 + aa  + 1 + false + \"dsds\");
       //  var    z = [0];
        // z[0]++;
+       
        "
     // let v = 5
     // let z = ref v |> List.singleton
@@ -158,20 +160,20 @@ let main argv =
 
     // printfn "%A" z.[0]
 
-    let str = 
-         "var x = 5;
-         fun foo()
-         {
-         }
-         fun foo2()
-         {
-            goo();
-            v = v - x;
-         }
-         var x = 14;
-         return 5;
-         v++;
-         "
+    // let str = 
+    //      "var x = 5;
+    //      fun foo()
+    //      {
+    //      }
+    //      fun foo2(x)
+    //      {
+    //         goo();
+    //         v = v - x;
+    //      }
+    //     // var x = 14;
+    //      return 5;
+    //      v++;
+    //      "
 
     Interpreter.Executor.run str |> printf "%A"
     Console.ReadLine() |> ignore

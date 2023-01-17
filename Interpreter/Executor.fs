@@ -33,12 +33,11 @@ module Executor =
         defaultEnvironment
         |> Environment.fromDefaultFunctions
 
-
     let private buildAnalyser () =
         let analyser =
-            SemanticAnalyser.analyseProgramTest
+            SemanticAnalyser.analyseStatementsWithInfo
 
-        let emptyMessageBuilder result = ""
+        let emptyMessageBuilder (errorType:ErrorType) = ""
 
         let analyse (errorMessageBuilder: ErrorType -> string) environment program =
             let res = analyser environment program
@@ -84,7 +83,7 @@ module Executor =
 
         programString
         |> preprocess
-        |> parse Parser.Statement.pProgramTest
+        |> parse Parser.Statement.pStatementsWithInfo
         |> Result.bind (createEnvironment () |> analyse)
         |> Result.map extractStatements
         |> Result.bind optimize

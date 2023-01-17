@@ -4,7 +4,6 @@ open System.Collections.Generic
 open FParsec
 open Microsoft.FSharp.Core
 
-
 module SemanticAnalyser =
 
     type StatementAnalyser = ExecutionEnvironment -> Statement -> AnalyserResult option
@@ -346,7 +345,7 @@ module SemanticAnalyser =
                 )
                 |> Continuation.run cnt
 
-    let analyseStatement (nodeAnalyser: StatementAnalyser) environment (stmt: Statement) =
+    let private analyseStatement (nodeAnalyser: StatementAnalyser) environment (stmt: Statement) =
         analyseStatementInternal nodeAnalyser environment stmt id
 
     let analyseProgram environment =
@@ -355,7 +354,7 @@ module SemanticAnalyser =
             statements
             |> List.collect (analyseStatement singleStatementAnalyser environment)
 
-    let analyseProgramTest environment (stmtsWithLineNmbs: StatementWithInfo list) =
+    let analyseStatementsWithInfo environment (stmtsWithLineNmbs: StatementWithInfo list) =
         let analyse =
             (analyseStatement singleStatementAnalyser environment)
 

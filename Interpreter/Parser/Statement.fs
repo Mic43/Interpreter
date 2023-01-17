@@ -190,6 +190,6 @@ module Statement =
         let stmt = pStatement ()
         (many1 stmt) .>> eof |>> Program.Of
 
-    let pProgramTest =
+    let pStatementsWithInfo =
         let stmt = pStatementWithInfo ()
         (many1 stmt) .>> eof

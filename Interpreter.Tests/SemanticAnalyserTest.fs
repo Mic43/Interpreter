@@ -15,8 +15,6 @@ open Interpreter.Tests.Infrastructure.Generators
 open Interpreter.Tests.Infrastructure.ExpressionHelper
 open Interpreter.Tests.Infrastructure.ParserHelper
 
-
-
 module ExpressionAnalyserTest =
     let runAnalyser str =
         let executionEnvironment =

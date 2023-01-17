@@ -10,6 +10,10 @@ module Interpreter =
         |> Result.mapError List.singleton
         |> Value.getLastResultOrVoid
 
+    // let runTest environment (statementWithInfos : StatementWithInfo list) =
+    //     let statements,infos  = statementWithInfos |> List.map (fun s -> (s.Statement,s.Info)) |> List.unzip
+    //     statements |> Statements |> run environment |> List.zipShortest infos                      
+         
     let runWithDefaultEnvironment program =
         let defaultEnvironment =
             [ "print", DefaultEnvironment.tryPrint
