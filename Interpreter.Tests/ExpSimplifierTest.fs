@@ -24,8 +24,8 @@ let constExpEvaluator exp =
         exp
 
 let simplify =
-    ExpSimplifier.simplifyNode
-    |> ExpSimplifier.simplify
+    ExpOptimiser.simplifyNode
+    |> ExpOptimiser.optimise
 
 
 module Binary =

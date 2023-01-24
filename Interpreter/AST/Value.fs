@@ -62,8 +62,8 @@ and Value =
         | VoidValue _ -> invalidArg "val" "cannot convert void to list"
         | v -> ref v |> List.singleton
 
-type EvalStopped =
-    | ExecuteError of ExecuteError
+type EvaluationStopped =
+    | RuntimeError of RuntimeError
     | ReturnStmtReached of Value
 
 module Value =
@@ -86,18 +86,18 @@ module Value =
 
     let ignoreResuls (res: Result<Value list, ExecuteError>) = res |> Result.map (fun _ -> Void)
 
-    let getLastResultOrVoid (res: Result<Value list, ExecuteError list>) =
+    let getLastResultOrVoid (res) =
         res
         |> Result.map (fun vl -> vl |> (List.tryLast >> (Option.defaultValue Void)))
 
     /// Changes returnstmtreached error result to actual Ok returned value
-    let getReturnedValue (res: Result<Value, EvalStopped>) =
+    let getReturnedValue (res: Result<Value, EvaluationStopped>) =
 
         res
         |> Result.bindError (fun e ->
             match e with
             | ReturnStmtReached value -> value |> Ok
-            | ExecuteError e -> e |> ExecuteError |> Error)
+            | RuntimeError e -> e |> RuntimeError |> Error)
 
     let toFloat (v: Value) = v.ToFloat()
     let toBool (v: Value) = v.ToBool()
@@ -129,7 +129,7 @@ module Value =
             }
             |> Option.toResultWith (
                 "Operation is not supported for list types"
-                |> (ExecuteError.create RuntimeError)
+                |> ExecuteError.createRuntimeError
             )
         | StringValue _, _
         | _, StringValue _ ->
@@ -141,13 +141,13 @@ module Value =
             }
             |> Option.toResultWith (
                 "Operation is not supported for string types"
-                |> (ExecuteError.create RuntimeError)
+                |> ExecuteError.createRuntimeError
             )
 
         | VoidValue _, _
         | _, VoidValue _ ->
             "cannot convert void to float"
-            |> (ExecuteError.createResult RuntimeError)
+            |> ExecuteError.createRuntimeErrorResult
         | _, _ ->
             opFloat (v1 |> toFloat) (v2 |> toFloat)
             |> resultConvFloat

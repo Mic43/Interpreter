@@ -6,7 +6,7 @@ module StmtEvaluator =
     let rec private evaluateScopedStmt
         (environment: ExecutionEnvironment)
         (exp: ScopedStatement)
-        : Result<Value, EvalStopped> =
+        : Result<Value, EvaluationStopped> =
 
         let evaluateScopedStmtRec =
             evaluateScopedStmt environment
@@ -25,7 +25,9 @@ module StmtEvaluator =
         let evaluateFunctionCall funIdentifier (actualParametersValues: Value list) =
 
             monad' {
-                let! foundFunc = Environment.tryGetCallable environment funIdentifier
+                let! foundFunc =
+                    Environment.tryGetCallable environment funIdentifier
+                    |> Result.mapError RuntimeError
 
                 match foundFunc with
                 | Function func ->
@@ -33,9 +35,8 @@ module StmtEvaluator =
                         actualParametersValues
                         |> List.map ref
                         |> Result.protect (List.zip func.Parameters)
-                        |> Result.mapError (fun _ ->
-                            ExecuteError.create ErrorType.RuntimeError "wrong parameters count"
-                            |> ExecuteError)
+                        |> Result.mapError (fun _ -> ExecuteError.createRuntimeError "wrong parameters count")
+                        |> Result.mapError RuntimeError
 
                     let newEnvironment =
                         Environment.create environment.Global
@@ -50,7 +51,7 @@ module StmtEvaluator =
                 | CompiledFunction compiledFun ->
                     return!
                         (compiledFun.Execute actualParametersValues)
-                        |> Result.mapError ExecuteError
+                        |> Result.mapError RuntimeError
             }
 
         let calculateInitValue (evaluateExpression: ExpEvaluator) varDeclarationInit =
@@ -65,7 +66,7 @@ module StmtEvaluator =
                 return!
                     (Environment.tryDefineVar environment vd.Name initVal)
                     |> (Result.map Value.createVoid)
-                    |> Result.mapError ExecuteError
+                    |> Result.mapError RuntimeError
             }
 
         let evalUserTypeCreation (evaluateExpression: ExpEvaluator) userTypeExp =
@@ -78,7 +79,7 @@ module StmtEvaluator =
             monad' {
                 let! userType =
                     userTypeFinder userTypeExp.StructTypeName
-                    |> Result.mapError ExecuteError
+                    |> Result.mapError RuntimeError
 
                 match userType.Kind with
                 | Struct s ->
@@ -110,7 +111,7 @@ module StmtEvaluator =
                                 |> ignore
 
                                 varEvaluator vd.Name
-                                |> Result.mapError ExecuteError)
+                                |> Result.mapError RuntimeError)
                             |> Result.map (fun v -> (id, v)))
                         |> Result.map Map.ofList
 
@@ -132,7 +133,7 @@ module StmtEvaluator =
                 (evalUserTypeCreation evaluateExpression)
                 exp
 
-        let rec loop body condition incrementExp : Result<Value, EvalStopped> =
+        let rec loop body condition incrementExp : Result<Value, EvaluationStopped> =
             monad' {
                 let! condVal = condition |> evaluateExpression
 
@@ -202,10 +203,18 @@ module StmtEvaluator =
         | FunDeclaration _, false
         | UserTypeDeclaration _, false ->
             "Function and structures can be defined only on global scope"
-            |> ExecuteError.createResult RuntimeError
+            |> ExecuteError.createRuntimeErrorResult
         | ScopedStatement stmt, _ ->
             evaluateScopedStmt environment stmt
             |> Result.mapError (fun e ->
                 match e with
-                | ExecuteError re -> re
+                | RuntimeError re -> re
                 | _ -> invalidOp "Return should be replaced by its value by this point")
+
+    let evaluateWithInfo
+        (environment: ExecutionEnvironment)
+        (statementWithInfo: StatementWithInfo)
+        : Result<Value, RuntimeError * StatementPosition> =
+
+        evaluate environment statementWithInfo.Statement
+        |> Result.mapError (fun re -> (re, statementWithInfo.Info))

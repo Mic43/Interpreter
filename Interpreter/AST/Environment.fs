@@ -95,7 +95,7 @@ module Environment =
                 g.UserTypes.[identifier] |> Ok
             else
                 ($"Type is not defined {identifier}"
-                 |> ExecuteError.createResult RuntimeError)
+                 |> ExecuteError.createRuntimeErrorResult)
         | Scoped _ -> failwith "Internal error, enironment.Global kind must be of Global type"
 
     let tryDefineUserType (environment: ExecutionEnvironment) userType =
@@ -109,15 +109,15 @@ module Environment =
             (g.UserTypes.TryAdd(userType.Name, userType), ())
             |> Option.ofPair
             |> (message
-                |> (ExecuteError.create RuntimeError
+                |> (ExecuteError.createRuntimeError
                     >> Option.toResultWith))
             |> Result.map Value.createVoid
         | Scoped _ -> failwith "Cannot define struct inside local scope"
 
     let tryDefineVar (environment: ExecutionEnvironment) identifier value =
         if environment.Current.Variables.ContainsKey identifier then
-            (sprintf "variable already defined: %s" (identifier.Get()))
-            |> (ExecuteError.createResult ErrorType.RuntimeError)
+            $"variable already defined: %s{identifier.Get()}"
+            |> (ExecuteError.createRuntimeErrorResult)
         else
             environment.Current.Variables.Add(identifier, ref value)
             Result.Ok()
@@ -136,8 +136,7 @@ module Environment =
                 return found
             }
             |> Option.toResultWith (
-                ExecuteError.create
-                    ErrorType.RuntimeError
+                ExecuteError.createRuntimeError               
                     (identifier.Get()
                      |> sprintf "variable not defined: %s")
             )
@@ -151,11 +150,7 @@ module Environment =
         (funcs.TryGetValue identifier)
         |> Option.ofPair
         |> Option.toResultWith (
-            (ExecuteError.create
-                ErrorType.RuntimeError
-                (identifier.Get()
-                 |> sprintf "Function not defined: %s"))
-            |> ExecuteError
+           $"Function not defined: {identifier.Get()}" |> ExecuteError.createRuntimeError        
         )
 
     let tryDefineCallable enviroment (callable: Callable) =
@@ -169,7 +164,7 @@ module Environment =
             (g.Functions.TryAdd(callable.Name, callable), ())
             |> Option.ofPair
             |> (message
-                |> (ExecuteError.create ErrorType.RuntimeError
+                |> (ExecuteError.createRuntimeError
                     >> Option.toResultWith))
             |> Result.map Value.createVoid
         | Scoped _ -> failwith "Cannot define function inside local scope"

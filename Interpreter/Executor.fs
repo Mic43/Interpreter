@@ -37,7 +37,7 @@ module Executor =
         let analyser =
             SemanticAnalyser.analyseStatementsWithInfo
 
-        let emptyMessageBuilder (errorType:ErrorType) = ""
+        let analyserMessageBuilder (errorType: ErrorType) = ""
 
         let analyse (errorMessageBuilder: ErrorType -> string) environment program =
             let res = analyser environment program
@@ -45,12 +45,20 @@ module Executor =
             if res |> List.isEmpty then
                 program |> Ok
             else
-                res
-                |> List.map SemanticError
-                |> List.map (fun e -> e |> emptyMessageBuilder |> ExecuteError.create e)
+                seq {
+                    for ar, pos in res do
+                        let errorType = ar |> SemanticError
+
+                        let message =
+                            errorType |> analyserMessageBuilder
+
+                        yield ExecuteError.create message errorType pos
+
+                }
+                |> Seq.toList
                 |> Result.Error
 
-        analyse emptyMessageBuilder
+        analyse analyserMessageBuilder
 
     let run programString =
 
@@ -59,32 +67,40 @@ module Executor =
         let parse parser str =
             match str |> run parser with
             | Success (program, _, _) -> program |> Result.Ok
-            | Failure (errorMsg, _, _) ->
-                errorMsg
-                |> ExecuteError.createResult ErrorType.ParseError
+            | Failure (errorMsg, error, _) ->
+                ExecuteError.create
+                    errorMsg
+                    ErrorType.ParseError
+                    { StatementPosition.Line = error.Position.Line
+                      StatementPosition.Column = error.Position.Column }
+                |> Result.Error
                 |> Result.mapError List.singleton
 
-        let optimize program =
-            let expOptimizer =
-                ExpSimplifier.simplifyNode
-                |> ExpSimplifier.simplify
+        let optimise (program: StatementWithInfo list) =
+            let expOptimiser =
+                ExpOptimiser.simplifyNode |> ExpOptimiser.optimise
 
-            let programOptimizer =
-                StmtSimplifier.simplifyProgram expOptimizer
+            let stmtOptimiser =
+                StmtOptimiser.optimise expOptimiser
 
-            program |> programOptimizer |> Ok
+            seq {
+                for si in program do
+                    { si with Statement = si.Statement |> stmtOptimiser }
+            }
+            |> Seq.toList
+            |> Ok
 
         let analyse = buildAnalyser ()
 
-        let extractStatements statementWithInfos =
-            statementWithInfos
-            |> List.map (fun statementWithInfo -> statementWithInfo.Statement)
-            |> Program.Of
+        let interpret environment program =
+            Interpreter.run environment program
+            |> Result.mapError (fun runtimeErrors ->
+                runtimeErrors
+                |> List.map (fun (re, position) -> ExecuteError.create re.Message ErrorType.RuntimeError position))
 
         programString
         |> preprocess
         |> parse Parser.Statement.pStatementsWithInfo
         |> Result.bind (createEnvironment () |> analyse)
-        |> Result.map extractStatements
-        |> Result.bind optimize
-        |> Result.bind (createEnvironment () |> Interpreter.run)
+        |> Result.bind optimise
+        |> Result.bind (createEnvironment () |> interpret)

@@ -4,7 +4,7 @@ open FSharpPlus
 open System.Collections.Generic
 open System.Linq
 
-type ExpEvaluator = Expression -> Result<Value, EvalStopped>
+type ExpEvaluator = Expression -> Result<Value, EvaluationStopped>
 
 module ExpEvaluator =
     open Value
@@ -22,12 +22,12 @@ module ExpEvaluator =
         let evalArithmeticExp op =
             try
                 (evalArithmeticExp val1 val2 op)
-                |> Result.mapError ExecuteError
+                |> Result.mapError RuntimeError
             with
             | _ ->
                 "Arithmetic error"
-                |> (ExecuteError.createResult RuntimeError)
-                |> Result.mapError ExecuteError
+                |> ExecuteError.createRuntimeErrorResult
+                |> Result.mapError RuntimeError
 
         let evalLogicalExp op =
             match op with
@@ -39,7 +39,7 @@ module ExpEvaluator =
              | Equal -> val1 .== val2
              | Greater -> val1 .> val2
              | Less -> val1 .< val2)
-            |> Result.mapError ExecuteError
+            |> Result.mapError RuntimeError
 
         match op with
         | ArithmeticOp op -> (evalArithmeticExp op)
@@ -50,26 +50,26 @@ module ExpEvaluator =
         match op with
         | Negate -> !value
         | Minus -> -(value)
-        |> Result.mapError ExecuteError
+        |> Result.mapError RuntimeError
 
     let rec tryEvaluate
-     //   (userTypeFinder: Identifier -> Result<UserType, RunError>)
-        (varEvaluator: Identifier -> Result<Ref<Value>, ExecuteError>)
+        //   (userTypeFinder: Identifier -> Result<UserType, RunError>)
+        (varEvaluator: Identifier -> Result<Ref<Value>, RuntimeError>)
         constEvaluator
         binOpEvaluator
         unaryOpEvaluator
         funEvaluator
-        evalUserTypeCreation      
+        evalUserTypeCreation
         (expression: Expression)
-        : Result<Value, EvalStopped> =
+        : Result<Value, EvaluationStopped> =
 
         let tryEvaluateRec =
-            tryEvaluate varEvaluator constEvaluator binOpEvaluator unaryOpEvaluator funEvaluator evalUserTypeCreation//varDeclEvaluator
+            tryEvaluate varEvaluator constEvaluator binOpEvaluator unaryOpEvaluator funEvaluator evalUserTypeCreation //varDeclEvaluator
 
-        let rec mutableExpEvaluator mutableExpr : Result<Ref<Value>, EvalStopped> =
+        let rec mutableExpEvaluator mutableExpr : Result<Ref<Value>, EvaluationStopped> =
 
             match mutableExpr with
-            | Var v -> varEvaluator v |> Result.mapError ExecuteError
+            | Var v -> varEvaluator v  |> Result.mapError RuntimeError
             | IndexedVar (ident, exp) ->
                 monad' {
                     let! index = exp |> tryEvaluateRec
@@ -82,17 +82,17 @@ module ExpEvaluator =
                                 lv.[index] |> Ok
                             else
                                 $"array index out of bounds: {index}"
-                                |> ExecuteError.createResult RuntimeError
+                                |> ExecuteError.createRuntimeErrorResult
                         | StringValue s, IntValue index ->
                             if index < s.Length then
                                 ref (s.[index] |> string |> StringValue) |> Ok
                             else
                                 $"string index out of bounds: {index}"
-                                |> ExecuteError.createResult RuntimeError
+                                |> ExecuteError.createRuntimeErrorResult
                         | _ ->
                             "indexing expression must evaluate to int"
-                            |> ExecuteError.createResult RuntimeError
-                        |> Result.mapError ExecuteError
+                            |> ExecuteError.createRuntimeErrorResult
+                        |> Result.mapError RuntimeError
                 }
             | MemberAccess (var, field) ->
                 monad' {
@@ -103,9 +103,11 @@ module ExpEvaluator =
                         | StructValue sv ->
                             sv.Fields
                             |> Map.tryFind field
-                            |> Option.toResultWith (ExecuteError.create RuntimeError $"Cannot find member: {field}")
-                        | _ -> "left side of member access operator must be struct" |> ExecuteError.createResult RuntimeError
-                        |> Result.mapError ExecuteError
+                            |> Option.toResultWith (ExecuteError.createRuntimeError $"Cannot find member: {field}")
+                        | _ ->
+                            "left side of member access operator must be struct"
+                            |> ExecuteError.createRuntimeErrorResult
+                        |> Result.mapError RuntimeError
                 }
 
         let assignmentEvaluator mutableExpr expr =
@@ -121,8 +123,8 @@ module ExpEvaluator =
                 }
             | _ ->
                 "Left operand of assignment expression must be LValue"
-                |> ExecuteError.createResult RuntimeError
-                |> Result.mapError ExecuteError
+                |> ExecuteError.createRuntimeErrorResult
+                |> Result.mapError RuntimeError
 
         let incrementEvaluator op exp =
             match exp with
@@ -133,7 +135,7 @@ module ExpEvaluator =
 
                     let! newValue =
                         (oldValue + (1 |> IntValue))
-                        |> Result.mapError ExecuteError
+                        |> Result.mapError RuntimeError
 
                     valueRef.Value <- newValue
 
@@ -144,8 +146,8 @@ module ExpEvaluator =
                 }
             | _ ->
                 "Left operand of assignment expression must be LValue"
-                |> ExecuteError.createResult RuntimeError
-                |> Result.mapError ExecuteError
+                |> ExecuteError.createRuntimeErrorResult
+                |> Result.mapError RuntimeError
 
         match expression with
         | Constant c -> constEvaluator c
@@ -153,9 +155,11 @@ module ExpEvaluator =
             mutableExpEvaluator m
             |> Result.map (fun r -> r.Value)
         | Assignment (mutableExpr, expr) -> assignmentEvaluator mutableExpr expr
-        | Binary b ->            
+        | Binary b ->
             let leftVal = (tryEvaluateRec b.LeftOperand)
-            let rightVal = (tryEvaluateRec b.RightOperand)
+
+            let rightVal =
+                (tryEvaluateRec b.RightOperand)
 
             monad' {
                 let! l = leftVal
@@ -180,6 +184,4 @@ module ExpEvaluator =
             expList
             |> (Traversable.traverseM tryEvaluateRec)
             |> Result.map (fun l -> l |> List.map (fun i -> ref i) |> ListValue)
-        | UserTypeCreation userTypeExp ->
-            evalUserTypeCreation userTypeExp
-        
+        | UserTypeCreation userTypeExp -> evalUserTypeCreation userTypeExp

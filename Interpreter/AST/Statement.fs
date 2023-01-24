@@ -1,6 +1,5 @@
 ﻿namespace Interpreter.AST
 
-open FParsec
 open FSharpPlus
 
 type VarDeclaration =
@@ -52,7 +51,7 @@ type Function =
 
 type CompiledFunction =
     { Name: Identifier
-      Execute: Value list -> Result<Value, ExecuteError> }
+      Execute: Value list -> Result<Value, RuntimeError> }
 
 type Callable =
     | Function of Function

@@ -127,10 +127,7 @@ module Continuation =
         |> Cont
 
     let bind f cont = cont |> map f |> join
-    
-    
-   
-    
+               
 [<AutoOpen>]    
 module ComputationExpression =
     

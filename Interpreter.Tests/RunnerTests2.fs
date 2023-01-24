@@ -42,7 +42,7 @@ module Variables =
                 |> ScopedStatement ]
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ()) 
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ()) 
 
         (match actual with
          | Ok _ -> false
@@ -67,7 +67,7 @@ module Variables =
             |> List.init (repeatsCount.Get + 1)
             |> Statements
 
-        let actual =  program |> Interpreter.run (Environment.createEmpty ()) 
+        let actual =  program |> Interpreter.runProgram (Environment.createEmpty ()) 
 
         (match actual with
          | Ok _ -> false
@@ -106,7 +106,7 @@ module Variables =
             |> List.map ScopedStatement
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ()) 
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ()) 
 
         actual |> Option.ofResult |> Option.isSome
 
@@ -127,7 +127,7 @@ module Variables =
             |> List.map ScopedStatement
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ()) 
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ()) 
         actual |> Option.ofResult |> Option.isSome
 
     [<Property(Verbose = true)>]
@@ -152,7 +152,7 @@ module Variables =
             |> List.map ScopedStatement
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ()) 
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ()) 
 
         // actual  .=. (varInit |> Result.Ok)
         actual |> Option.ofResult |> Option.isSome
@@ -186,7 +186,7 @@ module Variables =
               |> Statement.FromExpression ]
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ()) 
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ()) 
 
         let expected =
             varAssignmentValue |> IntValue |> Result.Ok
@@ -219,7 +219,7 @@ module Variables =
             |> Statements
 
         let expected = n.Get |> IntValue |> Result.Ok
-        let actual = program |> Interpreter.run (Environment.createEmpty ()) 
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ()) 
 
         expected .=. actual
 
@@ -231,7 +231,7 @@ module Programs =
 
         //let sut = new Runner()
 
-        let actual = (idFuncProgram inputVal) |> Interpreter.run (Environment.createEmpty ()) 
+        let actual = (idFuncProgram inputVal) |> Interpreter.runProgram (Environment.createEmpty ()) 
 
         let expected = inputVal |> Ok
 
@@ -241,7 +241,7 @@ module Programs =
     let ``identity function returns input when called with float argument`` (input: NormalFloat) =
         let inputVal = input |> float |> FloatValue
 
-        let actual =  (idFuncProgram inputVal) |> Interpreter.run (Environment.createEmpty ()) 
+        let actual =  (idFuncProgram inputVal) |> Interpreter.runProgram (Environment.createEmpty ()) 
 
         let expected = inputVal |> Result.Ok
 
@@ -271,7 +271,7 @@ module Programs =
 
         let program = [ addFunDecl; funCall ] |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ())
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ())
         let expected = (a + b) |> IntValue |> Result.Ok
 
         actual .=. expected
@@ -327,7 +327,7 @@ module Programs =
             |> Statements
 
         let expected = fib (n) |> IntValue |> Result.Ok
-        let actual = program |> Interpreter.run (Environment.createEmpty ())
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ())
 
         Assert.Equal(expected, actual)
 
@@ -339,7 +339,7 @@ module UserTypes =
               Statement.structDeclare name.Get Map.empty ]
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ())
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ())
 
         match actual with
         | Error _ -> true
@@ -352,7 +352,7 @@ module UserTypes =
               Statement.structDeclare $"{name.Get}{name2.Get}" Map.empty ]
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ())
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ())
 
         actual .=. (Value.Void |> Result.Ok)
 
@@ -365,7 +365,7 @@ module UserTypes =
             [ Statement.structDeclare name.Get ([ (fieldName.Get, None) ] |> Map.ofList) ]
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ())
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ())
 
         actual .=. (Value.Void |> Result.Ok)
 
@@ -381,7 +381,7 @@ module UserTypes =
                    |> Map.ofList) ]
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ())
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ())
 
         actual .=. (Value.Void |> Result.Ok)
 
@@ -400,7 +400,7 @@ module UserTypes =
                    |> Map.ofList) ]
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ())
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ())
 
         actual .=. (Value.Void |> Result.Ok)
 
@@ -411,7 +411,7 @@ module UserTypes =
               Statement.varDeclare varName.Get (Expression.structInitialize structName.Get Map.empty) ]
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ())
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ())
 
         actual .=. (Value.Void |> Result.Ok)
 
@@ -434,7 +434,7 @@ module UserTypes =
               |> Statement.FromExpression ]
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ())
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ())
 
         let expected =
             { TypeName = structName.Get |> Identifier.create
@@ -473,7 +473,7 @@ module UserTypes =
               |> Statement.FromExpression ]
             |> Statements
 
-        let actual = program |> Interpreter.run (Environment.createEmpty ())
+        let actual = program |> Interpreter.runProgram (Environment.createEmpty ())
 
         let expected =
             { TypeName = structName.Get |> Identifier.create

@@ -4,17 +4,21 @@ open FSharpPlus
 open System.Collections.Generic
 
 module Interpreter =
-    let run environment (Statements statementsList) =
+    let runProgram environment (Statements statementsList) =
         statementsList
         |> Traversable.traverseMTail (StmtEvaluator.evaluate environment)
         |> Result.mapError List.singleton
         |> Value.getLastResultOrVoid
 
-    // let runTest environment (statementWithInfos : StatementWithInfo list) =
+    let run environment (statementWithInfos : StatementWithInfo list)  =
+        statementWithInfos
+        |> Traversable.traverseMTail (StmtEvaluator.evaluateWithInfo environment)
+        |> Result.mapError List.singleton
+        |> Value.getLastResultOrVoid
     //     let statements,infos  = statementWithInfos |> List.map (fun s -> (s.Statement,s.Info)) |> List.unzip
     //     statements |> Statements |> run environment |> List.zipShortest infos                      
          
-    let runWithDefaultEnvironment program =
+    let runProgramWithDefaultEnvironment program =
         let defaultEnvironment =
             [ "print", DefaultEnvironment.tryPrint
               "println", DefaultEnvironment.tryPrintLn
@@ -22,7 +26,7 @@ module Interpreter =
               "len", DefaultEnvironment.tryGetLen ]
             |> Map.ofList
 
-        run
+        runProgram
             (defaultEnvironment
              |> Environment.fromDefaultFunctions)
             program

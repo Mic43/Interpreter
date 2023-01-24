@@ -1,9 +1,9 @@
 ﻿namespace Interpreter.AST
 
 
-module StmtSimplifier =
+module StmtOptimiser =
 
-    let rec private simplify (simplifyExp: Expression -> Expression) (stmt: Statement) : Statement =
+    let rec optimise (simplifyExp: Expression -> Expression) (stmt: Statement) : Statement =
 
         let rec simplifyBlock block =
             { block with Content = block.Content |> List.map simplifyScopedStatement }
@@ -51,7 +51,7 @@ module StmtSimplifier =
             |> FunDeclaration
         | UserTypeDeclaration _ -> stmt
         | ScopedStatement sc -> sc |> simplifyScopedStatement |> ScopedStatement
-
-    let simplifyProgram simplifyExp =
+        
+    let optimiseProgram simplifyExp =
         function
-        | Statements p -> p |> List.map (simplifyExp |> simplify) |> Statements
+        | Statements p -> p |> List.map (simplifyExp |> optimise) |> Statements

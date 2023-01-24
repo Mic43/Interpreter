@@ -5,7 +5,7 @@ open System.Collections.Generic
 open System.Linq
 
 
-module ExpSimplifier =
+module ExpOptimiser =
 
     /// matches (a*b) + (c*d) binary expression
     let private (|MulDistributivity|_|) (exp: BinaryExpression) =
@@ -95,8 +95,8 @@ module ExpSimplifier =
         | SimpleUnary (op, e) -> simplifyUnary (op, e)
         | e -> e
 
-    let rec simplify (simplifyNode: Expression -> Expression) exp =
-        let simplify = simplify simplifyNode
+    let rec optimise (simplifyNode: Expression -> Expression) exp =
+        let simplify = optimise simplifyNode
 
         (match exp with
          | Binary ({ LeftOperand = left
