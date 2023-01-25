@@ -15,9 +15,7 @@ module Interpreter =
         |> Traversable.traverseMTail (StmtEvaluator.evaluateWithInfo environment)
         |> Result.mapError List.singleton
         |> Value.getLastResultOrVoid
-    //     let statements,infos  = statementWithInfos |> List.map (fun s -> (s.Statement,s.Info)) |> List.unzip
-    //     statements |> Statements |> run environment |> List.zipShortest infos                      
-         
+                           
     let runProgramWithDefaultEnvironment program =
         let defaultEnvironment =
             [ "print", DefaultEnvironment.tryPrint
