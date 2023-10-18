@@ -18,10 +18,10 @@ and Environment =
     { Variables: Dictionary<Identifier, Ref<Value>>
       Kind: EnvironmentKind }
     static member CreateGlobal(functions: IDictionary<Identifier, Callable>) =
-        { Variables = new Dictionary<Identifier, Ref<Value>>()
+        { Variables = Dictionary<Identifier, Ref<Value>>()
           Kind =
             { Functions = functions
-              UserTypes = new Dictionary<Identifier, UserType>() }
+              UserTypes = Dictionary<Identifier, UserType>() }
             |> Global }
 
 type ExecutionEnvironment =
@@ -39,15 +39,15 @@ type ExecutionEnvironment =
 module Environment =
 
     let private createEmptyGlobal () =
-        { Variables = new Dictionary<Identifier, Ref<Value>>()
+        { Variables = Dictionary<Identifier, Ref<Value>>()
           Kind =
-            { Functions = new Dictionary<Identifier, Callable>()
-              UserTypes = new Dictionary<Identifier, UserType>() }
+            { Functions = Dictionary<Identifier, Callable>()
+              UserTypes = Dictionary<Identifier, UserType>() }
             |> Global }
 
     let create defaultGlobal =
         { Global = defaultGlobal
-          VariablesCache = new Dictionary<Identifier, Ref<Value>>()
+          VariablesCache = Dictionary<Identifier, Ref<Value>>()
           CurrentEnvironment = defaultGlobal }
 
     let createEmpty () = create (createEmptyGlobal ())
@@ -65,7 +65,7 @@ module Environment =
         |> create
 
     let private createNested parent variables =
-        { Variables = new Dictionary<Identifier, Ref<Value>>(variables |> Map.toSeq |> dict)
+        { Variables = Dictionary<Identifier, Ref<Value>>(variables |> Map.toSeq |> dict)
           Kind = { Parent = parent } |> EnvironmentKind.Scoped }
 
     let nestNewEnvironment (environment: ExecutionEnvironment) newVariables =
@@ -96,7 +96,7 @@ module Environment =
             else
                 ($"Type is not defined {identifier}"
                  |> ExecuteError.createRuntimeErrorResult)
-        | Scoped _ -> failwith "Internal error, enironment.Global kind must be of Global type"
+        | Scoped _ -> failwith "Internal error, environment.Global kind must be of Global type"
 
     let tryDefineUserType (environment: ExecutionEnvironment) userType =
         let message =
@@ -117,7 +117,7 @@ module Environment =
     let tryDefineVar (environment: ExecutionEnvironment) identifier value =
         if environment.Current.Variables.ContainsKey identifier then
             $"variable already defined: %s{identifier.Get()}"
-            |> (ExecuteError.createRuntimeErrorResult)
+            |> ExecuteError.createRuntimeErrorResult
         else
             environment.Current.Variables.Add(identifier, ref value)
             Result.Ok()
@@ -153,13 +153,13 @@ module Environment =
            $"Function not defined: {identifier.Get()}" |> ExecuteError.createRuntimeError        
         )
 
-    let tryDefineCallable enviroment (callable: Callable) =
+    let tryDefineCallable environment (callable: Callable) =
         let message =
             callable.Name
             |> Identifier.asString
             |> sprintf "Function %s already defined"
 
-        match enviroment.Global.Kind with
+        match environment.Global.Kind with
         | Global g ->
             (g.Functions.TryAdd(callable.Name, callable), ())
             |> Option.ofPair

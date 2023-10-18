@@ -1,6 +1,7 @@
 namespace Interpreter.AST
 
 open FSharpPlus
+open FSharpPlus.Data
 
 module StmtEvaluator =
     let rec private evaluateScopedStmt
@@ -125,12 +126,13 @@ module StmtEvaluator =
 
         let rec evaluateExpression exp =
             ExpEvaluator.tryEvaluate
-                (Environment.tryGetVarValue environment)
-                ExpEvaluator.constEvaluator
-                ExpEvaluator.binaryOpEvaluator
-                ExpEvaluator.unaryOpEvaluator
-                evaluateFunctionCall
-                (evalUserTypeCreation evaluateExpression)
+                (BasicEvaluators.Create
+                    (Environment.tryGetVarValue environment)
+                    ExpEvaluator.constEvaluator
+                    ExpEvaluator.binaryOpEvaluator
+                    ExpEvaluator.unaryOpEvaluator
+                    evaluateFunctionCall
+                    (evalUserTypeCreation evaluateExpression))
                 exp
 
         let rec loop body condition incrementExp : Result<Value, EvaluationStopped> =

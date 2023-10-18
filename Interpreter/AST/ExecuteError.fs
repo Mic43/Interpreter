@@ -27,8 +27,7 @@ type ExecuteError =
       Position: StatementPosition }
 
 module ExecuteError =
-    //  let create errorType str = { Message = str; Type = errorType }
-    //let createResult errorType str = (create errorType str) |> Error
+
     let create message errorType pos =
         { ExecuteError.Message = message
           ExecuteError.Position = pos

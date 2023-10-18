@@ -6,6 +6,22 @@ open System.Linq
 
 type ExpEvaluator = Expression -> Result<Value, EvaluationStopped>
 
+type BasicEvaluators =
+    { VarEvaluator: Identifier -> Result<Ref<Value>, RuntimeError>
+      ConstEvaluator: Value -> Result<Value, EvaluationStopped>
+      BinOpEvaluator: BinaryOp -> Value -> Value -> Result<Value, EvaluationStopped>
+      UnaryOpEvaluator: UnaryOp -> Value -> Result<Value, EvaluationStopped>
+      FunEvaluator: Identifier -> Value list -> Result<Value, EvaluationStopped>
+      EvalUserTypeCreation: StructCreationExpression -> Result<Value, EvaluationStopped> }
+
+    static member Create varEvaluator constEvaluator binOpEvaluator unaryOpEvaluator funEvaluator evalUserTypeCreation =
+        { VarEvaluator = varEvaluator
+          ConstEvaluator = constEvaluator
+          BinOpEvaluator = binOpEvaluator
+          UnaryOpEvaluator = unaryOpEvaluator
+          FunEvaluator = funEvaluator
+          EvalUserTypeCreation = evalUserTypeCreation }
+
 module ExpEvaluator =
     open Value
 
@@ -52,24 +68,17 @@ module ExpEvaluator =
         | Minus -> -(value)
         |> Result.mapError RuntimeError
 
-    let rec tryEvaluate
-        //   (userTypeFinder: Identifier -> Result<UserType, RunError>)
-        (varEvaluator: Identifier -> Result<Ref<Value>, RuntimeError>)
-        constEvaluator
-        binOpEvaluator
-        unaryOpEvaluator
-        funEvaluator
-        evalUserTypeCreation
-        (expression: Expression)
-        : Result<Value, EvaluationStopped> =
+    let rec tryEvaluate (basicEvaluators: BasicEvaluators) (expression: Expression) : Result<Value, EvaluationStopped> =
 
         let tryEvaluateRec =
-            tryEvaluate varEvaluator constEvaluator binOpEvaluator unaryOpEvaluator funEvaluator evalUserTypeCreation //varDeclEvaluator
+            tryEvaluate basicEvaluators
 
         let rec mutableExpEvaluator mutableExpr : Result<Ref<Value>, EvaluationStopped> =
 
             match mutableExpr with
-            | Var v -> varEvaluator v  |> Result.mapError RuntimeError
+            | Var v ->
+                basicEvaluators.VarEvaluator v
+                |> Result.mapError RuntimeError
             | IndexedVar (ident, exp) ->
                 monad' {
                     let! index = exp |> tryEvaluateRec
@@ -165,7 +174,7 @@ module ExpEvaluator =
                 let! l = leftVal
                 let! r = rightVal
 
-                return! binOpEvaluator b.BinaryOp l r
+                return! basicEvaluators.BinOpEvaluator b.BinaryOp l r
             }
         | SimpleUnary (op, exp) ->
             monad' {
@@ -178,10 +187,10 @@ module ExpEvaluator =
                 |> Traversable.traverseM tryEvaluateRec
 
             parametersValues
-            |> Result.bind (fun v -> v |> funEvaluator fc.Name)
+            |> Result.bind (fun v -> v |> basicEvaluators.FunEvaluator fc.Name)
         | Increment (op, exp) -> incrementEvaluator op exp
         | ListCreation expList ->
             expList
             |> (Traversable.traverseM tryEvaluateRec)
             |> Result.map (fun l -> l |> List.map (fun i -> ref i) |> ListValue)
-        | UserTypeCreation userTypeExp -> evalUserTypeCreation userTypeExp
+        | UserTypeCreation userTypeExp -> basicEvaluators.EvalUserTypeCreation userTypeExp

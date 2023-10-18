@@ -15,17 +15,17 @@ open Interpreter.Tests.Infrastructure.ExpressionHelper
 
 let constExpEvaluator exp =
     ExpEvaluator.tryEvaluate
-        (fun ident -> failwith "eval")
-        ExpEvaluator.constEvaluator
-        ExpEvaluator.binaryOpEvaluator
-        ExpEvaluator.unaryOpEvaluator
-        (fun a b -> failwith "eval")
-        (fun a -> failwith "eval")
+        (BasicEvaluators.Create
+            (fun _ -> failwith "eval")
+            ExpEvaluator.constEvaluator
+            ExpEvaluator.binaryOpEvaluator
+            ExpEvaluator.unaryOpEvaluator
+            (fun _ _ -> failwith "eval")
+            (fun _ -> failwith "eval"))
         exp
 
 let simplify =
-    ExpOptimiser.simplifyNode
-    |> ExpOptimiser.optimise
+    ExpOptimiser.simplifyNode |> ExpOptimiser.optimise
 
 
 module Binary =
@@ -143,7 +143,7 @@ module General =
             match expected with
             | Ok (Constant (FloatValue v)) when System.Double.IsNaN(v) -> true |> Prop.ofTestable
             | _ -> actual .=. expected)
-        |> Prop.forAll (Expressions.constantExpressionTree |> Arb.fromGen) 
+        |> Prop.forAll (Expressions.constantExpressionTree |> Arb.fromGen)
 
 module WithParsing =
 
